@@ -1,0 +1,11 @@
+strategy_id,trade_dt,product_id,manager_id,status
+12_BAL,20190704,12,03,running
+80_DV,20190704,80,01,running
+84_ZF300,20190704,84,03,running
+85A_JD500,20190704,85A,99,running
+91_JD1000,20190704,91,99,running
+84_JD300,20190704,84,99,running
+55_ZF502,20190704,55,03,running
+80_PETER,20190704,80,06,running
+92_JERRY,20190704,92,11,running
+12_ZS,20190704,12,04,running
