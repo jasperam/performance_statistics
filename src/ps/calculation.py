@@ -33,7 +33,6 @@ _sec_type_bond = 'BOND'
 _sec_type_index = 'INDEX'
 _sec_type_future = 'FUTURE'
 
-dataloader = DataLoader()
 calendar = TradeCalendarDB()
 pgloader = PgSQLLoader()
 pgloader.set_db_config(read_cfg('cfg/db.ini', package='ps')['attribution'])

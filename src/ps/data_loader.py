@@ -185,13 +185,6 @@ def get_price_dict(date, symbol_df):
     return prices_dict
 
 
-# def get_benchmark_price(benchmark_, w):
-#     def _inner(df_):
-#         price = get_index_wsi(benchmark_, df_.op_time, w)
-#         return price[benchmark_[0]]['close']
-#     return _inner
-
-
 def get_commission_rate(ACC_INFO):
     def _inner(x): 
         if x not in ACC_INFO.strategy_id.unique().tolist():
