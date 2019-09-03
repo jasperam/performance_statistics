@@ -16,19 +16,15 @@ setup(
     package_dir={"": "src"},
     package_data={
          'ps': [
-             'cfg/*.ini'
+             'cfg/*.ini',
+             'cfg/*.yaml',
          ]
     },
     install_requires=[        
         'jt',
-        'pandas',       
-        # 'requests',
-        # 'qi.data', 
-        # 'qi.tool',          
+        'pandas', 
         'pyyaml',
-        # 'pyodbc',
         'pymssql',
-        # 'seaborn'
     ],
     zip_safe=False,
 )
