@@ -3,7 +3,7 @@ import datetime
 
 from WindPy import w
 from ps.data_loader import get_pos, get_trade, get_benchmark_info, get_alloction, \
-    get_account_detail, get_daily_quote, get_commission_rate, calculate_dvd
+    get_account_detail, get_daily_quote, get_commission_rate, calculate_dvd, cal_option_volume
 from jt.utils.misc.log import Logger
 from jt.utils.calendar.api_calendar import TradeCalendarDB
 from jt.utils.db import PgSQLLoader
@@ -11,7 +11,6 @@ from jt.utils.misc import read_cfg
 from jt.utils.time import datetime2string
 
 FEE_RATE = 1e-3
-FU_FEE_RATE = 0.23e-4
 
 MULTIPLIER_DICT = {
     'IC': 200,
@@ -36,7 +35,6 @@ attributiondb = PgSQLLoader('attribution')
 log = Logger(module_name_=__name__)
 
 ALLOCATION = get_alloction()
-# ALLOCATION = ALLOCATION.loc[ALLOCATION['strategy_id'].isin(['80_PETER'])]
 
 def get_multiplier():
     def _inner(x):
@@ -78,6 +76,7 @@ def save_result(df_, table_name, keys_):
     log.info(f'Save result to DB {table_name}')
     attributiondb.upsert(table_name, df_=df_, keys_=keys_)  
 
+
 def cal_pos_return(pos):    
     pos['multiplier'] = 1
     pos['stock_pos_pnl'] = pos['change_price'] * pos['volume'] * pos['multiplier']
@@ -101,12 +100,13 @@ def cal_trade_return(trade):
     trade.loc[trade['volume']<0, 'stock_fee'] = trade['stock_trade_amount'] * FEE_RATE
     trade.loc[trade['volume']>0, 'stock_fee'] = 0
     # trade['stock_fee'] = trade.apply(lambda x:
-    #     x['stock_trade_amount'] * FEE_RATE if x['volume'] < 0 else 0, axis=1)      
+    #     x['stock_trade_amount'] * FEE_RATE if x['volume'] < 0 else 0, axis=1)
     trade['stock_trade_pnl'] = (trade['close']-trade['price'])*trade['volume']*trade['multiplier'] - trade['stock_fee'] - trade['stock_commission']
     trade['stock_buy'] = trade.apply(lambda x: x['price'] * x['volume'] if x['volume']>0 else 0, axis=1)     
     trade['stock_sell'] = trade.apply(lambda x: x['price'] * x['volume'] if x['volume']<0 else 0, axis=1)     
     trade_stats = trade[['strategy_id','stock_trade_pnl','stock_fee','stock_trade_net_close','stock_buy','stock_sell','stock_commission']].groupby(
-        by='strategy_id').sum().reset_index()   
+        by='strategy_id').sum().reset_index()       
+
     return trade_stats
 
 def cal_future_pos_return(pos): 
@@ -118,10 +118,12 @@ def cal_future_pos_return(pos):
 def cal_future_trade_return(trade):
     trade['multiplier'] = trade.apply(get_multiplier(), axis=1)
     trade['future_trade_net_close'] = trade['settle']*trade['volume']*trade['multiplier']
-    trade['future_commission'] = abs(trade['price']*trade['volume']*trade['multiplier']) * FU_FEE_RATE
+    _allocation = ALLOCATION.loc[ALLOCATION.sec_type==_sec_type_future, ['strategy_id','commission','min_commission']]
+    trade = trade.merge(_allocation, on='strategy_id', how='left')
+    trade['future_commission'] = abs(trade['price']*trade['volume']*trade['multiplier'])*trade['commission']+trade['min_commission']
     trade['future_trade_pnl'] = (trade['settle']-trade['price'])*trade['multiplier']*trade['volume'] - trade['future_commission']
-    trade['future_buy'] = trade.apply(lambda x: x['price'] * x['volume']*x['multiplier'] if x['volume']>0 else 0, axis=1)     
-    trade['future_sell'] = trade.apply(lambda x: x['price'] * x['volume']*x['multiplier'] if x['volume']<0 else 0, axis=1)     
+    trade['future_buy'] = trade.apply(lambda x: x['price']*x['volume']*x['multiplier'] if x['volume']>0 else 0, axis=1)     
+    trade['future_sell'] = trade.apply(lambda x: x['price']*x['volume']*x['multiplier'] if x['volume']<0 else 0, axis=1)     
     return trade[['strategy_id','future_trade_pnl','future_commission','future_trade_net_close','future_buy','future_sell']].groupby('strategy_id').sum().reset_index()
 
 def cal_fund_pos_return(pos):    
@@ -168,8 +170,8 @@ def cal_hk_trade_return(trade, forex):
     trade['hk_stock_fee'] = trade.apply(lambda x:
         x['hk_stock_trade_amount'] * FEE_RATE if x['volume'] < 0 else 0, axis=1)      
     trade['hk_stock_trade_pnl'] = (trade['close']-trade['price'])*trade['volume']*trade['multiplier'] * forex
-    trade['hk_stock_buy'] = trade.apply(lambda x: x['price'] * x['volume'] * forex if x['volume']>0 else 0, axis=1)     
-    trade['hk_stock_sell'] = trade.apply(lambda x: x['price'] * x['volume'] * forex if x['volume']<0 else 0, axis=1)     
+    trade['hk_stock_buy'] = trade.apply(lambda x: x['price'] * x['volume'] * x['multiplier'] * forex if x['volume']>0 else 0, axis=1)     
+    trade['hk_stock_sell'] = trade.apply(lambda x: x['price'] * x['volume'] * x['multiplier'] * forex if x['volume']<0 else 0, axis=1)     
     trade_stats = trade[['strategy_id', 'hk_stock_trade_pnl', 'hk_stock_fee', 'hk_stock_trade_net_close', 'hk_stock_buy', 'hk_stock_sell']].groupby(
         by='strategy_id').sum().reset_index()
     _allocation = ALLOCATION.loc[ALLOCATION.sec_type==_sec_type_stock, ['strategy_id','commission']]
@@ -186,19 +188,25 @@ def cal_option_pos_return(pos):
         by='strategy_id').sum().reset_index()
     return pos_stats
     
-def cal_option_trade_return(trade):    
+def cal_option_trade_return(trade, date_):    
     trade['multiplier'] = 10000
     trade['option_trade_net_close'] = trade['volume'] * trade['settle'] * trade['multiplier']
-    # trade['option_trade_amount'] = trade['volume'] * trade['price'] * trade['multiplier']
-    _allocation = ALLOCATION.loc[ALLOCATION.sec_type==_sec_type_option, ['strategy_id','commission']]
-    trade = trade.merge(_allocation, on='strategy_id', how='left')    
-    # trade['option_commission'] = trade.apply(lambda x: x['volume']*x['commission'] if not (x['volume']<0 and x['trade_flag']=='OPEN')  else 0, axis=1)      
-    trade['option_commission'] = 0 
-    trade['option_trade_pnl'] = (trade['settle']-trade['price'])*trade['volume']*trade['multiplier'] - trade['option_commission']
-    trade['option_buy'] = trade.apply(lambda x: x['price'] * x['volume'] if x['volume']>0 else 0, axis=1)     
-    trade['option_sell'] = trade.apply(lambda x: x['price'] * x['volume'] if x['volume']<0 else 0, axis=1)     
-    trade_stats = trade[['strategy_id', 'option_trade_pnl', 'option_commission', 'option_buy', 'option_sell', 'option_trade_net_close']].groupby(
+    # trade['option_trade_amount'] = trade['volume'] * trade['price'] * trade['multiplier']  
+    trade['option_trade_pnl'] = (trade['settle']-trade['price'])*trade['volume']*trade['multiplier']
+    trade['option_buy'] = trade.apply(lambda x: x['price'] * x['volume'] * x['multiplier'] if x['volume']>0 else 0, axis=1)     
+    trade['option_sell'] = trade.apply(lambda x: x['price'] * x['volume'] * x['multiplier'] if x['volume']<0 else 0, axis=1)     
+    trade_stats = trade[['strategy_id', 'option_trade_pnl', 'option_buy', 'option_sell', 'option_trade_net_close']].groupby(
         by='strategy_id').sum().reset_index()   
+    _commission = cal_option_volume(date_) # df[strategy_id, option_trade_volume]    
+    if _commission.empty:
+        trade_stats['option_commission'] = 0
+    else:
+        _allocation = ALLOCATION.loc[ALLOCATION.sec_type==_sec_type_option, ['strategy_id','commission']]
+        _commission.loc[_commission['strategy_id']=='80B','strategy_id']='80B_MJOPT'
+        _commission = _commission.merge(_allocation, on='strategy_id', how='left')
+        _commission['option_commission'] = _commission['option_trade_volume'] * _commission['commission']        
+        trade_stats = trade_stats.merge(_commission[['strategy_id','option_commission']], on='strategy_id', how='left').fillna(0)    
+    trade_stats['option_trade_pnl'] = trade_stats['option_trade_pnl'] - trade_stats['option_commission']
     return trade_stats
 
 def merge_pos_trade_stats(date_, pos_stats, trade_stats, account_detail, BM):
@@ -279,30 +287,43 @@ def cal_type_2(stats):
 
     return stats
 
-def daily_statistics(date_):   
+def daily_statistics(date_, acc_lists=None, new_account=None):   
     # data pre-process    
+    if acc_lists is None:
+        acc_lists = ALLOCATION['strategy_id'].drop_duplicates().tolist()
     BM = get_benchmark_info()
     stats = pd.DataFrame()
-    pos = get_pos(date_, ALLOCATION['strategy_id'].drop_duplicates().tolist())
-    trade = get_trade(date_, ALLOCATION['strategy_id'].drop_duplicates().tolist())
-    if not calendar.is_trading_date(date_, exchange_='hk'):
-        pos = pos.loc[pos['security_type']!=_sec_type_stock_hk, :]
-        trade = trade.loc[trade['security_type']!=_sec_type_stock_hk, :]
+    if not calendar.is_trading_date(date_):
+        tmp_date = calendar.get_trading_date(date_, 1)
+        pos = get_pos(tmp_date, acc_lists)
+    else:
+        pos = get_pos(date_, acc_lists)
+    trade = get_trade(date_, acc_lists)
 
     #if there is no T-1 pos and T trade, return [empty dataframe]
     if pos.empty and trade.empty:
         return stats
     
-    stock_prices = get_daily_quote(date_, 'stock', encoding_='gbk') 
-    future_prices = get_daily_quote(date_, 'future')
-    index_prices = get_daily_quote(date_, 'index')
-    fund_prices = get_daily_quote(date_, 'fund', encoding_='gbk')
-    hkstock_prices = get_daily_quote(date_, 'hkstock', encoding_='gbk') 
-    option_prices = get_daily_quote(date_, 'option', encoding_='gbk') 
-    forex_prices = get_daily_quote(date_, 'forex') 
-    BM = BM.merge(index_prices, left_on='bm_symbol', right_on='symbol', how='inner')
-    account_detail = get_account_detail(calendar.get_trading_date(date_, -1))
+    if calendar.is_trading_date(date_, exchange_='hk'):
+        hkstock_prices = get_daily_quote(date_, 'hkstock', encoding_='gbk') 
+        hkindex_prices = get_daily_quote(date_, 'hkindex')
 
+    if calendar.is_trading_date(date_):        
+        stock_prices = get_daily_quote(date_, 'stock', encoding_='gbk') 
+        future_prices = get_daily_quote(date_, 'future')
+        index_prices = get_daily_quote(date_, 'index')
+        fund_prices = get_daily_quote(date_, 'fund', encoding_='gbk')    
+        option_prices = get_daily_quote(date_, 'option', encoding_='gbk') 
+        forex_prices = get_daily_quote(date_, 'forex')
+        if calendar.is_trading_date(date_, exchange_='hk'):
+            index_prices=index_prices.append(hkindex_prices, ignore_index=True)
+    else:
+        if calendar.is_trading_date(date_, exchange_='hk'):
+            index_prices=hkindex_prices
+            forex_prices = get_daily_quote(calendar.get_trading_date(date_), 'forex')
+    
+    BM = BM.merge(index_prices, left_on='bm_symbol', right_on='symbol', how='left') 
+    account_detail = get_account_detail(calendar.get_trading_date(date_, -1), new_account)
 
     def cal_pos_stock(pos):
         if not pos.empty:
@@ -380,22 +401,29 @@ def daily_statistics(date_):
     def cal_trade_option(trade):
         if not trade.empty:
             trade = trade.merge(option_prices[['symbol','settle']], on='symbol', how='left')        
-            ret = cal_option_trade_return(trade)
+            ret = cal_option_trade_return(trade, date_)
         else:
             ret = pd.DataFrame(columns=['strategy_id', 'option_trade_pnl', 'option_commission', 'option_buy', 'option_sell', 'option_trade_net_close'])
         return ret
 
-
     # calculation stock pnl/alpha
     pos_stats, trade_stats = pd.DataFrame(columns=['strategy_id']), pd.DataFrame(columns=['strategy_id'])
 
-    sec_type_list = ['STOCK','FUTURE','HK','OPTION','FUND'] 
-    for sec_type in sec_type_list:
+    sec_type_list = ['STOCK','FUTURE','OPTION','FUND','HK'] 
+    # if not calendar.is_trading_date(date_, exchange_='hk'):
+    #     sec_type_list = ['STOCK','FUTURE','OPTION','FUND']
+    # elif not calendar.is_trading_date(date_):
+    #     sec_type_list = ['HK']
+    
+    for sec_type in sec_type_list:        
         _pos = pos[pos['security_type']==sec_type]        
         _f = 'cal_pos_' + sec_type.lower()
         _pos_stats = eval(_f)(_pos)
         
-        _trade = trade[trade['security_type']==sec_type]   
+        if not trade.empty:
+            _trade = trade[trade['security_type']==sec_type]
+        else:   
+            _trade = pd.DataFrame()
         _f = 'cal_trade_' + sec_type.lower()
         _trade_stats = eval(_f)(_trade)
 
@@ -403,7 +431,7 @@ def daily_statistics(date_):
         trade_stats = trade_stats.merge(_trade_stats, how='outer', on=['strategy_id'])
     
     # get dividend
-    acc_lists = "'"+"','".join(ALLOCATION['strategy_id'].tolist())+"'"
+    acc_lists = "'"+"','".join(acc_lists)+"'"
     sql = f'''
         SELECT strategy_id, sum(dvd_amount) as dvd_amount FROM "public"."dividend_detail" where ex_dt='{date_}' and strategy_id in ({acc_lists}) group by strategy_id
     '''
@@ -417,49 +445,60 @@ def daily_statistics(date_):
     stats = merge_pos_trade_stats(date_, pos_stats, trade_stats, account_detail, BM)
 
     cal_types = ALLOCATION['cal_type'].unique().tolist()
-    for t in cal_types:
-        log.info(f'Deal Cal Type {t}')
+    for t in cal_types:        
         strategy_ids = ALLOCATION.loc[ALLOCATION['cal_type']==t, 'strategy_id'].tolist()
         tmp_stats = stats[stats['strategy_id'].isin(strategy_ids)]
-        if t=='1':
-            args = [tmp_stats]
-            kwargs = {}
-        elif t=='2':
-            args = [tmp_stats]
-            kwargs = {}
-        elif t=='3':
-            args = [tmp_stats]
-            kwargs = {}
+        if not tmp_stats.empty:
+            log.info(f'Deal Cal Type {t}')
+            if t=='1':
+                args = [tmp_stats]
+                kwargs = {}
+            elif t=='2':
+                args = [tmp_stats]
+                kwargs = {}
+            elif t=='3':
+                args = [tmp_stats]
+                kwargs = {}
 
-        tmp_stats = eval(f'cal_type_{t}')(*args, **kwargs)
+            tmp_stats = eval(f'cal_type_{t}')(*args, **kwargs)
 
-        performance_stats = tmp_stats[['trade_dt','strategy_id','ret','bm','alpha',
-        'pos_ret','trade_ret','pnl','pos_pnl','trade_pnl','stock_mv',
-        'fee','commission','buy','sell','trade_net','stock_mv_ratio',
-        'product_asset','stock_turnover','update_time','bm_pnl','dvd_amount','strategy_name']]
+            performance_stats = tmp_stats[['trade_dt','strategy_id','ret','bm','alpha',
+            'pos_ret','trade_ret','pnl','pos_pnl','trade_pnl','stock_mv',
+            'fee','commission','buy','sell','trade_net','stock_mv_ratio',
+            'product_asset','stock_turnover','update_time','bm_pnl','dvd_amount','strategy_name']]
 
-        if not performance_stats.empty:
-            save_result(performance_stats, '"public"."performance"', ['trade_dt', 'strategy_id'])
+            if not performance_stats.empty:
+                save_result(performance_stats, '"public"."performance"', ['trade_dt', 'strategy_id'])
 
-        detail_stats = tmp_stats[['trade_dt','strategy_id','stock_pos_pnl','stock_trade_pnl',
-        'stock_buy','stock_sell','stock_turnover','stock_fee','stock_commission','stock_amount','stock_pos_counts',
-        'future_pos_pnl','future_trade_pnl','future_buy','future_sell','future_commission','future_amount',
-        'option_pos_pnl','option_trade_pnl','option_commission',
-        'fund_pos_pnl','fund_trade_pnl','fund_buy','fund_sell','fund_commission','fund_amount',
-        'hk_stock_pos_pnl','hk_stock_trade_pnl','hk_stock_buy','hk_stock_sell','hk_stock_turnover',
-        'hk_stock_fee','hk_stock_commission','hk_stock_amount','hk_stock_pos_counts','hk_stock_forex']]
+            detail_stats = tmp_stats[['trade_dt','strategy_id','stock_pos_pnl','stock_trade_pnl',
+            'stock_buy','stock_sell','stock_turnover','stock_fee','stock_commission','stock_amount','stock_pos_counts',
+            'future_pos_pnl','future_trade_pnl','future_buy','future_sell','future_commission','future_amount',
+            'option_pos_pnl','option_trade_pnl','option_commission',
+            'fund_pos_pnl','fund_trade_pnl','fund_buy','fund_sell','fund_commission','fund_amount',
+            'hk_stock_pos_pnl','hk_stock_trade_pnl','hk_stock_buy','hk_stock_sell','hk_stock_turnover',
+            'hk_stock_fee','hk_stock_commission','hk_stock_amount','hk_stock_pos_counts','hk_stock_forex']]
 
-        if not detail_stats.empty:
-            save_result(detail_stats, '"public"."classcification_detail"', ['trade_dt', 'strategy_id'])
+            if not detail_stats.empty:
+                save_result(detail_stats, '"public"."classcification_detail"', ['trade_dt', 'strategy_id'])
 
     # calculation dividend of T
-    pos_end = get_pos(calendar.get_trading_date(date_, 1), ALLOCATION['strategy_id'].drop_duplicates().tolist())    
-    calculate_dvd(date_, pos_end) 
+    pos_end = get_pos(calendar.get_trading_date(date_, 1), acc_lists)  
+    if not pos_end.empty:  
+        calculate_dvd(date_, pos_end) 
 
     return stats
 
 
 if __name__ == "__main__":    
-    daily_statistics('20190731')
-  
+    # date_list = calendar.get_trading_calendar(from_='20190913', to_='20190913')
+    # for d in date_list:
+    #     print(f'Deal date {d}')
+    #     acc_lists = ['01_HEDGE','06_HEDGE','07_HEDGE','13_HEDGE','52_HEDGE','55_HEDGE','55_JDHEDGE',
+    #             '58_HEDGE','64A_HEDGE','79_HEDGE','79_JDHEDGE','80_HEDGE','80_ZSINTRADAY','82_HEDGE',
+    #             '85B_HEDGE','93A_HEDGE','93A_JDHEDGE','93_HEDGE','93_JDHEDGE','06_OTHER','07_OTHER',
+    #             '12_OTHER','13_OTHER','41_OTHER','52_OTHER','55_OTHER','58_OTHER','62_OTHER','64A_OTHER',
+    #             '79_OTHER','80A_OTHER','80_OTHER','82_OTHER','84_OTHER','85A_OTHER','85B_OTHER','89_OTHER',
+    #             '91_OTHER','93A_OTHER','93B_OTHER','93_OTHER','06_DV','01_DV','01_PETER','01_ZF502']
+    #     daily_statistics(d, ['90_JASON','82_JASON']) #, new_account=pd.DataFrame({'account_id':['95'], 'totalasset':[2000000]})
+    daily_statistics('20190913', ['90_JASON','82_JASON'])
 

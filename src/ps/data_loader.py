@@ -39,7 +39,7 @@ def get_pos(date_, strategy_ids=None):
 
 def get_trade(date_, strategy_ids=None):  
     trade = dataloader.get_transaction_gql(date_, date_, strategy_ids,
-            fields=['account_id', 'symbol', 'volume', 'price', 'trade_flag'])
+            fields=['account_id', 'symbol', 'volume', 'price'])
     if not trade.empty:
         trade = trade.loc[(trade.volume!=0) & (trade.price!=0)]       
         trade = trade[~trade['symbol'].isin(EXCLUDED_SECURITY_LIST)].reset_index(drop=True)
@@ -66,7 +66,7 @@ def get_alloction():
 
     def get_strategy_info():   
         sql = """
-            SELECT distinct on (strategy_name) strategy_name,bm,bm_description,cal_type,adjust_return
+            SELECT distinct on (strategy_name) strategy_name,bm,bm_description,cal_type,adjust_return,manager_id
             FROM "public"."strategy" order by strategy_name,update_time desc
         """    
         return attributiondb.read(sql)
@@ -79,7 +79,7 @@ def get_alloction():
         return attributiondb.read(sql)
 
     sql = """
-        SELECT distinct on (strategy_id) strategy_id,strategy_name,product_id,manager_id FROM "public"."allocation"   
+        SELECT distinct on (strategy_id) strategy_id,strategy_name,product_id FROM "public"."allocation"   
         where status='running'      
         order by strategy_id,update_time desc;
     """    
@@ -96,8 +96,11 @@ def get_alloction():
     return allocation
 
 
-def get_account_detail(date_):
-    return dataloader.get_account_detail(date_)
+def get_account_detail(date_, new_account=None):
+    ret = dataloader.get_account_detail(date_)
+    if not new_account is None:
+        ret = ret.append(new_account, ignore_index=True)
+    return ret
 
      
 def get_prices(symbols, date):
@@ -152,16 +155,16 @@ def calculate_dvd(date_, pos):
 
     return r
 
+
+def cal_option_volume(date_):
+    sql = f"""
+        select account as strategy_id, sum(Qty) as option_trade_volume
+        from dbo.JasperTradeDetail 
+        where trade_dt='{date_}' and type='OPTION' and not (side=2 and OCtag='open') GROUP BY account;
+    """    
+    ret = traderdb.read(sql)
+    return ret
  
+
 if __name__ == "__main__":
-    # pos = pd.DataFrame({'strategy_id': ['12','01','91'],
-    #                     'symbol': ['002129.SZ','000154.SZ','603580.SH'],
-    #                     'volume': [10000, 25000, 32000]})
-    # calculate_dvd('20190723', pos)
-    ret = get_alloction()
-    print(ret.head())
-
-
-    
-
-    
+    pass
