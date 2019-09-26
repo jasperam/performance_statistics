@@ -376,7 +376,7 @@ def daily_statistics(date_, acc_lists=None, new_account=None):
     def cal_pos_hk(pos):
         if not pos.empty:
             pos = insert_market_data(pos, hkstock_prices)
-            ret = cal_hk_pos_return(pos, forex_prices.loc[forex_prices['symbol']=='HKDCNY.EX', 'close'].to_numpy()[0])
+            ret = cal_hk_pos_return(pos, forex_prices.loc[forex_prices['symbol'].str.contains('HKDCNY'), 'close'].to_numpy()[0])
         else:
             ret = pd.DataFrame(columns=['strategy_id', 'hk_stock_pos_pnl', 'hk_stock_amount', 'hk_stock_pre_amount', 'hk_stock_pos_counts', 'hk_stock_forex'])
         return ret
@@ -384,7 +384,7 @@ def daily_statistics(date_, acc_lists=None, new_account=None):
     def cal_trade_hk(trade):
         if not trade.empty:
             trade = insert_market_data(trade, hkstock_prices)
-            ret = cal_hk_trade_return(trade, forex_prices.loc[forex_prices['symbol']=='HKDCNY.EX', 'close'].to_numpy()[0])
+            ret = cal_hk_trade_return(trade, forex_prices.loc[forex_prices['symbol'].str.contains('HKDCNY'), 'close'].to_numpy()[0])
         else:
             ret = pd.DataFrame(columns=['strategy_id', 'hk_stock_trade_pnl', 'hk_stock_fee', 'hk_stock_commission', 
                                 'hk_stock_trade_net_close', 'hk_stock_buy', 'hk_stock_sell'])
