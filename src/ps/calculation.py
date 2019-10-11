@@ -294,7 +294,7 @@ def daily_statistics(date_, acc_lists=None, new_account=None):
     BM = get_benchmark_info()
     stats = pd.DataFrame()
     if not calendar.is_trading_date(date_):
-        tmp_date = calendar.get_trading_date(date_, 1)
+        tmp_date = calendar.get_trading_date(date_)
         pos = get_pos(tmp_date, acc_lists)
     else:
         pos = get_pos(date_, acc_lists)
@@ -500,5 +500,5 @@ if __name__ == "__main__":
     #             '79_OTHER','80A_OTHER','80_OTHER','82_OTHER','84_OTHER','85A_OTHER','85B_OTHER','89_OTHER',
     #             '91_OTHER','93A_OTHER','93B_OTHER','93_OTHER','06_DV','01_DV','01_PETER','01_ZF502']
     #     daily_statistics(d, ['90_JASON','82_JASON']) #, new_account=pd.DataFrame({'account_id':['95'], 'totalasset':[2000000]})
-    daily_statistics('20190913', ['90_JASON','82_JASON'])
+    daily_statistics('20191002', ['90_JASON','82_JASON'])
 
