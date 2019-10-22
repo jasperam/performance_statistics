@@ -7,21 +7,21 @@ calendardb = TradeCalendarDB()
 TODAY = calendardb.get_trading_date() # get T0
 _logger = Logger(module_name_=__name__)
 
-def decompress_7Z(filePath_, _7z_path_ = None, save_dir_ = None):    
+def decompress_7Z(filePath_, save_dir_ = None):    
     """
     decompress 7z files
     input: filepath_ : full path of 7z files
     _7z_path_ : .exe of 7z
     save_dir_ : save path
     """ 
-    _7z_path_ = r'D:\Programs\7-Zip\7z.exe' if _7z_path_ is None else _7z_path_       
-    assert fsutils.is_file(_7z_path_), f'{_7z_path_} do not exist!'
-
-    _root = filePath_[0:1] #get root dir
     _dir, _name = fsutils.extract_file_dir_and_name(filePath_)
     save_dir_ = _dir if save_dir_ is None else save_dir_
-    os.system(f'decompress.bat {_root} {_7z_path_} {_dir} {_name} {save_dir_}')
+    # os.system(f'decompress.bat {_root} {_7z_path_} {_dir} {_name} {save_dir_}')
+    os.system(f'7z x {filePath_} -o{save_dir_}')
 
+def save_result(df_, db, table_name, keys_):    
+    _logger.info(f'Save result to DB {table_name}')
+    db.upsert(table_name, df_=df_, keys_=keys_)  
 
 def attach_security_type(df_):
     df_copy = df_.copy(deep=True)

@@ -156,15 +156,6 @@ def download_ashare_daily_data(w, date_ = TODAY, is_overwrite_ = False):
             df.rename(columns={'amt':'amount', 'chg':'change_price', 'pct_chg':'change_rate'}, inplace=True)
             df.to_csv(_quote_file_cta, index=0)
             cnt['cta_cnt']=df.shape[0]
-
-    # decompress kline data    
-    for i in [1,2]:
-        file_name_ = f'{date_}-KLine-{i}.7z'
-        if fsutils.is_file(file_name_):
-            fsutils.move_file(file_name_, from_=r'\\192.168.1.136\data\Wind\tdb\tdb-data-gx\2019', to_=r'D:\temp', replace_=True)
-            _kline_files = os.path.join(r'D:\temp',file_name_)
-            if (not fsutils.is_file(_kline_files)) or (fsutils.is_file(_kline_files) and is_overwrite_):
-                decompress_7Z(_kline_files, save_dir_=r'\\192.168.1.88\"Trading Share"\daily_quote\KLine')
         
     # fund daily quote
     _quote_file_fund = os.path.join(_root, f'fund_{date_}.csv')
@@ -244,6 +235,17 @@ def download_daily_data(date_ = TODAY, is_overwrite_ = False):
     
     w.close()
     return r
+
+
+def copy_extract_kline_files(date_=TODAY, is_overwrite_=False):
+    # decompress kline data    
+    for i in [1,2]:
+        file_name_ = f'{date_}-KLine-{i}.7z'       
+        fsutils.move_file(file_name_, from_=r'\\192.168.1.136\data\Wind\tdb\tdb-data-gx\2019', to_=r'D:\temp', replace_=True)
+        _kline_files = os.path.join(r'D:\temp',file_name_)
+        if (not fsutils.is_file(_kline_files)) or (fsutils.is_file(_kline_files) and is_overwrite_):
+            decompress_7Z(_kline_files, save_dir_=r'\\192.168.1.88\"Trading Share"\daily_quote\KLine')
+
 
 if __name__ == "__main__":
     # init_db_info()  
