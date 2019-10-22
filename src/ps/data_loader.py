@@ -55,29 +55,29 @@ def get_benchmark_info():
     """    
     return attributiondb.read(sql)
 
+def get_product_info():    
+    sql = """
+        SELECT distinct on (product_id, sec_type) product_id,product_name,trader,commission,sec_type,institution,min_commission,root_product_id
+        FROM "public"."product" where status='running' order by product_id,sec_type,update_time desc
+    """    
+    return attributiondb.read(sql)    
+
+def get_strategy_info():   
+    sql = """
+        SELECT distinct on (strategy_name) strategy_name,bm,bm_description,cal_type,adjust_return,manager_id
+        FROM "public"."strategy" order by strategy_name,update_time desc
+    """    
+    return attributiondb.read(sql)
+
+def get_manager_info():   
+    sql = """
+        SELECT distinct on (manager_id) manager_id,manager_name,dividend_type
+        FROM "public"."manager" order by manager_id,update_time desc
+    """    
+    return attributiondb.read(sql)
+
 
 def get_alloction():
-    def get_product_info():    
-        sql = """
-            SELECT distinct on (product_id, sec_type) product_id,product_name,trader,commission,sec_type,institution,min_commission,root_product_id
-            FROM "public"."product" order by product_id,sec_type,update_time desc
-        """    
-        return attributiondb.read(sql)    
-
-    def get_strategy_info():   
-        sql = """
-            SELECT distinct on (strategy_name) strategy_name,bm,bm_description,cal_type,adjust_return,manager_id
-            FROM "public"."strategy" order by strategy_name,update_time desc
-        """    
-        return attributiondb.read(sql)
-
-    def get_manager_info():   
-        sql = """
-            SELECT distinct on (manager_id) manager_id,manager_name 
-            FROM "public"."manager" order by manager_id,update_time desc
-        """    
-        return attributiondb.read(sql)
-
     sql = """
         SELECT distinct on (strategy_id) strategy_id,strategy_name,product_id FROM "public"."allocation"   
         where status='running'      
@@ -123,6 +123,15 @@ def get_daily_quote(date_, type_, encoding_='utf8'):
     return ret
 
 
+def get_sc_members(date_, encoding_='utf8'):
+    """
+    get sc members
+    """
+    _root = CONFIG.get('PROD', NotImplementedError)
+    ret = pd.read_csv(os.path.join(_root, f'{date_}.shsz_sc_members.csv'), encoding=encoding_)
+    return ret
+
+
 def get_commission_rate(ACC_INFO, security_type_):
     def _inner(x): 
         if x['strategy_id'] not in ACC_INFO.strategy_id.unique().tolist():
@@ -164,7 +173,56 @@ def cal_option_volume(date_):
     """    
     ret = traderdb.read(sql)
     return ret
- 
+
+
+def get_deduction(from_, to_):
+    sql = f"""
+        SELECT b.strategy_name,sum(a.pnl) as deduction 
+        FROM "one_time_deduction" a,"allocation" b
+        where a.trade_dt between '{from_}' and '{to_}' and a.strategy_id = b.strategy_id
+        group by b.strategy_name;
+    """    
+    ret = attributiondb.read(sql)
+    return ret
+
+
+def get_performance(from_, to_):
+    sql = f'''
+        SELECT strategy_name,sum(pnl) as pnl,sum(bm_pnl) as bm_pnl,sum(stock_mv) as stock_mv
+        FROM "performance" b 
+        where trade_dt between '{from_}' and '{to_}'
+        GROUP BY strategy_name
+    '''
+    ret = attributiondb.read(sql)
+    return ret
+
+
+def get_history_alpha(from_, to_):
+    sql = f'''
+        select trade_dt,strategy_name,alpha,turnover from (
+            select a.trade_dt,strategy_name,round(sum(alpha*stock_mv)/sum(stock_mv) ,2) as alpha, round(sum(a.stock_turnover/2*stock_mv)/sum(stock_mv) ,2) as turnover
+            from "performance" a, "classcification_detail" b where a.stock_mv!=0 and a.trade_dt=b.trade_dt and a.strategy_id=b.strategy_id and b.stock_pos_counts>=7
+            and a.trade_dt between '{from_}' and '{to_}'
+            GROUP BY a.trade_dt,strategy_name
+            union
+            select trade_dt,strategy_name,round(avg(alpha),2) as alpha,0 as turnover
+            from "performance" where stock_mv=0 and trade_dt between '{from_}' and '{to_}'
+            GROUP BY trade_dt,strategy_name) as foo
+        order by strategy_name,trade_dt
+    '''
+    ret = attributiondb.read(sql)
+    return ret
+
+
+def get_cumulative_bonus(from_, to_):
+    sql = f'''
+        select trade_dt,manager_name,cumulative_bonus,bonus,current_redemption,defer
+        from "bonus"
+    '''
+    ret = attributiondb.read(sql)
+    return ret
+
 
 if __name__ == "__main__":
-    pass
+    alloc = get_alloction()
+    alloc.to_csv(r'e:\temp\alloc.csv')
