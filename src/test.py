@@ -1,4 +1,5 @@
 from ps.calculation import daily_statistics
+from ps.summary import cal_monthly_performance
 from ps.init_data import download_daily_data, init_db_info
 from jt.utils.calendar import TradeCalendarDB
 from jt.utils.misc.log import Logger
@@ -12,8 +13,13 @@ if __name__ == "__main__":
     #     _logger.info(f'Deal date {d}')
     #     # download_daily_data(date_=d, is_overwrite_ = True)
     #     daily_statistics(d)
-    # download_daily_data(date_='20191009', is_overwrite_ = True)
-    daily_statistics('20191009')
+    # download_daily_data(date_='20191010', is_overwrite_ = True)
+    # daily_statistics('20191009')
     # daily_statistics('20191008',['90_JASON','82_JASON'])
+    
     # init_db_info()
+
+    # bonus, defer_bonus = cal_monthly_performance(from_='20190701', to_='20190930')
+    # bonus.to_csv(r'e:\temp\bonus.csv')
+    # defer_bonus.to_csv(r'e:\temp\defer_bonus.csv')
     pass

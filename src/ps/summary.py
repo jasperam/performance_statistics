@@ -3,7 +3,7 @@
 # @author Neo Lin
 # @description check and statistics performance
 # @created 2019-09-23T11:28:55.643Z+08:00
-# @last-modified 2019-10-21T16:36:38.925Z+08:00
+# @last-modified 2019-10-23T11:10:18.793Z+08:00
 #
 import pandas as pd
 import numpy as np
@@ -124,23 +124,21 @@ def cal_monthly_performance(from_='20190701', to_=TODAY):
     sr = sr.merge(turnover, left_index=True, right_index=True)
     ann_alpha = history.loc[:,['strategy_name','alpha']].groupby('strategy_name').mean() * 250 /10000
     sr = sr.merge(ann_alpha, left_index=True, right_index=True)
-    sr['sr'] = sr['alpha']/sr['vol']
+    sr = sr.merge(per, left_index=True, right_index=True, how='inner') 
+    sr['sr'] = (sr['alpha']-sr['bm_adjust_rate']*245)/sr['vol'] 
+
     days = history.loc[:,['strategy_name','trade_dt']].groupby('strategy_name').count()
     days.rename(columns={'trade_dt':'days'}, inplace=True)
     sr = sr.merge(days, left_index=True, right_index=True)
     deduction = get_deduction(from_, to_)
     deduction.set_index('strategy_name', inplace=True)
     sr = sr.merge(deduction, left_index=True, right_index=True, how='left').fillna(0)
+    
     # cal compliance rate
-    sr['boundary'] = sr.apply(get_compliance_boundary(), axis=1)
+    sr['boundary'] = sr.apply(get_compliance_boundary(), axis=1)    
     sr['compliance_rate'] = sr.apply(cal_compliance_rate(), axis=1)
-    # sr.reset_index(inplace=True)
-    sr = sr.merge(per, left_index=True, right_index=True, how='inner')  
     sr['adjust_pnl'] = sr['pnl'] - sr['bm_pnl'] - sr['bm_adjust'] - sr['deduction']
-    sr['dividend_rate'] = sr.apply(cal_dividend_rate(), axis=1)
-    # sr = sr.merge(add_strategy_mv_, left_index=True, right_index=True, how='left').fillna(0)
-    # sr['stock_mv'] = sr['stock_mv'] + sr['add_stock_mv']*sr['days']
-    # sr.drop(columns='add_stock_mv', inplace=True)
+    sr['dividend_rate'] = sr.apply(cal_dividend_rate(), axis=1)   
     sr['bonus'] = sr.apply(lambda x: 
         x['adjust_pnl']*x['dividend_rate']*x['compliance_rate'] if x['adjust_pnl']>0 else x['adjust_pnl']*x['dividend_rate'], axis=1)
     sr['start_dt'] = from_
@@ -163,7 +161,7 @@ def cal_monthly_performance(from_='20190701', to_=TODAY):
     bonus.rename(columns={'bonus':'cumulative_bonus'}, inplace=True)
 
     # save to DB
-    cumulative_bonus = get_cumulative_bonus(from_, to_)
+    cumulative_bonus = get_cumulative_bonus()
     his_bonus = cumulative_bonus.loc[cumulative_bonus['trade_dt']<to_,['manager_name','bonus']].groupby('manager_name').sum()
     his_bonus.rename(columns={'bonus':'history_bonus'}, inplace=True)
     bonus = bonus.merge(his_bonus, left_index=True, right_index=True, how='left').fillna(0)
@@ -175,12 +173,13 @@ def cal_monthly_performance(from_='20190701', to_=TODAY):
         '"public"."bonus"', ['trade_dt', 'manager_name'])
     
     # get defer bonus
+    defer_bonus = get_defer_bonus(to_)
     
-
-    return bonus
+    return bonus, defer_bonus
 
 if __name__ == "__main__":
     # jd_per = cal_jd_performance(from_='20191001', to_='20191030')
     # jd_per.to_csv(r'E:\temp\jd10.csv')    
-    cal_monthly_performance(from_='20190701', to_='20190930')
+    bonus, defer_bonus = cal_monthly_performance(from_='20190701', to_='20190930')
+    # sr.to_csv(r'e:\temp\x.csv')
     # print(sr)

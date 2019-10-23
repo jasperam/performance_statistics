@@ -214,7 +214,7 @@ def get_history_alpha(from_, to_):
     return ret
 
 
-def get_cumulative_bonus(from_, to_):
+def get_cumulative_bonus():
     sql = f'''
         select trade_dt,manager_name,cumulative_bonus,bonus,current_redemption,defer
         from "bonus"
@@ -223,6 +223,16 @@ def get_cumulative_bonus(from_, to_):
     return ret
 
 
+def get_defer_bonus(to_):
+    date_ = str(int(to_[0:4])-1)+to_[4:8]
+    sql = f'''
+        select trade_dt,manager_name,defer as deferred bonus
+        from "bonus" where trade_dt='{date_}' and defer>0
+    '''
+    ret = attributiondb.read(sql)
+    return ret
+    
+
 if __name__ == "__main__":
-    alloc = get_alloction()
-    alloc.to_csv(r'e:\temp\alloc.csv')
+    ret = get_defer_bonus('20200930')
+    print(ret)
