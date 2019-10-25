@@ -216,12 +216,12 @@ def merge_pos_trade_stats(date_, pos_stats, trade_stats, account_detail, BM):
     stats['trade_dt'] = date_
     stats['bm'] = stats['strategy_id'].apply(get_benchmark_rct(BM))    
     stats['bm'] = stats['bm'] * 10000
-    stats['stock_mv'] = stats['stock_amount'] + stats['stock_trade_net_close']    
-    stats['stock_amount'] = stats['stock_mv']
+    stats['stock_amount'] = stats['stock_amount'] + stats['stock_trade_net_close']
+    stats['hk_stock_amount'] = stats['hk_stock_amount'] + stats['hk_stock_trade_net_close']    
     stats['future_amount'] = stats['future_amount'] + stats['future_trade_net_close']
-    stats['fund_amount'] = stats['fund_amount'] + stats['fund_trade_net_close']
-    stats['hk_stock_amount'] = stats['hk_stock_amount'] + stats['hk_stock_trade_net_close']
+    stats['fund_amount'] = stats['fund_amount'] + stats['fund_trade_net_close']    
     stats['option_amount'] = stats['option_amount'] + stats['option_trade_net_close']
+    stats['stock_mv'] = stats['stock_amount'] + stats['hk_stock_amount']    
     stats['pos_pnl'] = stats['stock_pos_pnl'] + stats['dvd_amount'] + stats['future_pos_pnl'] + stats['fund_pos_pnl'] + stats['option_pos_pnl'] + stats['hk_stock_pos_pnl']
     stats['trade_pnl'] = stats['stock_trade_pnl'] + stats['future_trade_pnl'] + stats['fund_trade_pnl']  + stats['option_trade_pnl']+ stats['hk_stock_trade_pnl']
     stats['pnl'] = stats['pos_pnl'] + stats['trade_pnl']
@@ -512,17 +512,17 @@ def cal_special_bm_pnl(date_, strategy_ids_, bm_pnls_):
 
 
 if __name__ == "__main__":    
-    date_list = calendar.get_trading_calendar(from_='20191012', to_='20191021')
-    for d in date_list:
-        print(f'Deal date {d}')
+    # date_list = calendar.get_trading_calendar(from_='20191012', to_='20191021')
+    # for d in date_list:
+    #     print(f'Deal date {d}')
     #     acc_lists = ['01_HEDGE','06_HEDGE','07_HEDGE','13_HEDGE','52_HEDGE','55_HEDGE','55_JDHEDGE',
     #             '58_HEDGE','64A_HEDGE','79_HEDGE','79_JDHEDGE','80_HEDGE','80_ZSINTRADAY','82_HEDGE',
     #             '85B_HEDGE','93A_HEDGE','93A_JDHEDGE','93_HEDGE','93_JDHEDGE','06_OTHER','07_OTHER',
     #             '12_OTHER','13_OTHER','41_OTHER','52_OTHER','55_OTHER','58_OTHER','62_OTHER','64A_OTHER',
     #             '79_OTHER','80A_OTHER','80_OTHER','82_OTHER','84_OTHER','85A_OTHER','85B_OTHER','89_OTHER',
     #             '91_OTHER','93A_OTHER','93B_OTHER','93_OTHER','06_DV','01_DV','01_PETER','01_ZF502']
-        daily_statistics(d, ['96_PR','96_ZF502']) #, new_account=pd.DataFrame({'account_id':['95'], 'totalasset':[2000000]})
-    # daily_statistics('20191011', ['96_PR','96_ZF502'])
+        # daily_statistics(d, ['96_PR','96_ZF502']) #, new_account=pd.DataFrame({'account_id':['95'], 'totalasset':[2000000]})
+    # daily_statistics('20191024')
     # strategy_ids_ = ['95_MJOPT','80B_MJOPT','93C_MJOPT', '80B_MJCTA', '93A_MJCTA', '95_MJCTA', 
     #     '80A_ARBT', '80A_ZS', '12_ZS']
     # bm_pnls_ = [196*0.03/245*10000, 1570*0.03/245*10000, 200*0.03/245*10000, 500*0.03/245*10000, 200*0.03/245*10000, 200*0.03/245*10000,

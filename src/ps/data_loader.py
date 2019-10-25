@@ -201,8 +201,8 @@ def get_history_alpha(from_, to_):
     sql = f'''
         select trade_dt,strategy_name,alpha,turnover from (
             select a.trade_dt,strategy_name,round(sum(alpha*stock_mv)/sum(stock_mv) ,2) as alpha, round(sum(a.stock_turnover/2*stock_mv)/sum(stock_mv) ,2) as turnover
-            from "performance" a, "classcification_detail" b where a.stock_mv!=0 and a.trade_dt=b.trade_dt and a.strategy_id=b.strategy_id and b.stock_pos_counts>=7
-            and a.trade_dt between '{from_}' and '{to_}'
+            from "performance" a, "classcification_detail" b where a.stock_mv!=0 and a.trade_dt=b.trade_dt and a.strategy_id=b.strategy_id and (b.stock_pos_counts>=7 or b.hk_stock_pos_counts>0)  
+            and a.trade_dt between '{from_}' and '{to_}' and abs(a.trade_net)/a.stock_mv<=0.5
             GROUP BY a.trade_dt,strategy_name
             union
             select trade_dt,strategy_name,round(avg(alpha),2) as alpha,0 as turnover
@@ -226,7 +226,7 @@ def get_cumulative_bonus():
 def get_defer_bonus(to_):
     date_ = str(int(to_[0:4])-1)+to_[4:8]
     sql = f'''
-        select trade_dt,manager_name,defer as deferred bonus
+        select trade_dt,manager_name,defer as deferred_bonus
         from "bonus" where trade_dt='{date_}' and defer>0
     '''
     ret = attributiondb.read(sql)

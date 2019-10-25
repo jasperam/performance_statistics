@@ -3,7 +3,7 @@
 # @author Neo Lin
 # @description check and statistics performance
 # @created 2019-09-23T11:28:55.643Z+08:00
-# @last-modified 2019-10-23T11:10:18.793Z+08:00
+# @last-modified 2019-10-25T10:55:43.807Z+08:00
 #
 import pandas as pd
 import numpy as np
@@ -11,7 +11,7 @@ import numpy as np
 from jt.utils.db import PgSQLLoader, SqlServerLoader
 from jt.utils.calendar import TradeCalendarDB
 from ps.data_loader import get_strategy_info, get_manager_info, get_benchmark_info, get_deduction, \
-    get_performance, get_history_alpha, get_cumulative_bonus
+    get_performance, get_history_alpha, get_cumulative_bonus, get_defer_bonus
 from ps.utils import save_result
 
 NAVDB = SqlServerLoader('trade71')
@@ -54,14 +54,15 @@ def cal_jd_performance(from_='20190701', to_=TODAY):
     jd_per['adjust_pnl'] = jd_per['pnl'] - jd_per['bm_pnl'] - jd_per['bm_adjust']
     return jd_per
 
-def cal_monthly_performance(from_='20190701', to_=TODAY):    
-    def get_benchmark_rct():
+def get_benchmark_rct():
         bm = get_benchmark_info()
         def _inner(f_):
             for x, y in zip(bm['bm_id'], bm['bm_adjust_return'].astype(str)):               
                 f_ = f_.replace(x, y)
             return eval(f_)/245
         return _inner
+
+def cal_monthly_performance(from_='20190701', to_=TODAY):  
 
     def get_compliance_boundary():
         level_boundary = {
@@ -110,7 +111,7 @@ def cal_monthly_performance(from_='20190701', to_=TODAY):
     
     history = get_history_alpha(from_, to_)
     # calculation turnover
-    turnover = history.loc[:,['strategy_name','turnover']].groupby('strategy_name').mean() * 250
+    turnover = history.loc[:,['strategy_name','turnover']].groupby('strategy_name').mean() * 245
     turnover['level'] = turnover['turnover'].apply(lambda x: 'high' if x > 100 else ('mid' if x > 25 else 'low'))
     # deal with special strategy 
     turnover.loc['ARBT','level'] = 'mid'
@@ -119,10 +120,10 @@ def cal_monthly_performance(from_='20190701', to_=TODAY):
     turnover.loc['MJOPT','level'] = 'high'
     
     # calculation sr
-    sr = history.loc[:,['strategy_name','alpha']].groupby('strategy_name').std() * 250**0.5 /10000    
+    sr = history.loc[:,['strategy_name','alpha']].groupby('strategy_name').std() * 245**0.5 /10000    
     sr.rename(columns={'alpha':'vol'}, inplace=True)
     sr = sr.merge(turnover, left_index=True, right_index=True)
-    ann_alpha = history.loc[:,['strategy_name','alpha']].groupby('strategy_name').mean() * 250 /10000
+    ann_alpha = history.loc[:,['strategy_name','alpha']].groupby('strategy_name').mean() * 245 /10000
     sr = sr.merge(ann_alpha, left_index=True, right_index=True)
     sr = sr.merge(per, left_index=True, right_index=True, how='inner') 
     sr['sr'] = (sr['alpha']-sr['bm_adjust_rate']*245)/sr['vol'] 
@@ -169,17 +170,58 @@ def cal_monthly_performance(from_='20190701', to_=TODAY):
     bonus['bonus'] = bonus.apply(lambda x:x['cumulative_bonus']-x['history_bonus'] if x['cumulative_bonus']-x['history_bonus']>0 else 0, axis=1)
     bonus['current_redemption'] = bonus['bonus'] * 0.8
     bonus['defer'] = bonus['bonus'] * 0.2
-    save_result(bonus.loc[:,['trade_dt','cumulative_bonus','bonus','current_redemption','defer']].reset_index(), ATTDB, 
-        '"public"."bonus"', ['trade_dt', 'manager_name'])
     
     # get defer bonus
     defer_bonus = get_defer_bonus(to_)
     
-    return bonus, defer_bonus
+    return bonus, defer_bonus, sr
+
+def save_monthly_stat(from_, to_):
+    bonus, defer_bonus, sr = cal_monthly_performance(from_=from_, to_=to_)
+    save_result(bonus.loc[:,['trade_dt','cumulative_bonus','bonus','current_redemption','defer']].reset_index(), ATTDB, 
+        '"public"."bonus"', ['trade_dt', 'manager_name'])
+    
+
+def daily_report(date_):
+    per = get_performance(date_, date_)
+    strategy = get_strategy_info()   
+    per = per.merge(strategy.loc[:,['strategy_name','bm']], how='left', on='strategy_name')   
+    per['bm_adjust_rate'] = per['bm'].apply(get_benchmark_rct())
+    per['bm_adjust_pnl'] = per['stock_mv'] * per['bm_adjust_rate']
+    
+    history = get_history_alpha(date_, date_)
+    per = per.merge(history, on='strategy_name')
+    per['adjust_pnl'] = per['pnl'] - per['bm_pnl'] - per['bm_adjust_pnl']
+
+    all_per = get_performance('20190701', date_)
+    all_per.set_index('strategy_name', inplace=True)
+    all_history = get_history_alpha('20190701', date_)
+    # calculation sr
+    sr = all_history.loc[:,['strategy_name','alpha']].groupby('strategy_name').std() * 245**0.5 /10000    
+    sr.rename(columns={'alpha':'vol'}, inplace=True)    
+    ann_alpha = all_history.loc[:,['strategy_name','alpha']].groupby('strategy_name').mean() * 245 /10000
+    sr = sr.merge(ann_alpha, left_index=True, right_index=True)
+    sr = sr.merge(all_per, left_index=True, right_index=True, how='inner') 
+    days = all_history.loc[:,['strategy_name','trade_dt']].groupby('strategy_name').count()
+    days.rename(columns={'trade_dt':'days'}, inplace=True)
+    sr = sr.merge(days, left_index=True, right_index=True)    
+    sr = sr.merge(strategy.loc[:,['strategy_name','bm']], how='left', on='strategy_name')  
+    sr['bm_adjust_rate'] = sr['bm'].apply(get_benchmark_rct())
+    sr['bm_adjust_rate'] = sr['bm_adjust_rate'] * 245
+    sr['sr'] = (sr['alpha']-sr['bm_adjust_rate'])/sr['vol'] 
+    per = per.loc[:,['strategy_name','alpha','pnl','bm_pnl','bm_adjust_pnl','adjust_pnl','turnover']]
+    per.sort_values('strategy_name' ,inplace=True)
+    sr = sr.loc[:,['strategy_name','days','sr','alpha','vol','bm_adjust_rate']]
+    sr.sort_values('strategy_name',inplace=True)
+    return per, sr
+
 
 if __name__ == "__main__":
     # jd_per = cal_jd_performance(from_='20191001', to_='20191030')
     # jd_per.to_csv(r'E:\temp\jd10.csv')    
-    bonus, defer_bonus = cal_monthly_performance(from_='20190701', to_='20190930')
+    # bonus, defer_bonus, sr = cal_monthly_performance(from_='20190701', to_='20190930')
     # sr.to_csv(r'e:\temp\x.csv')
     # print(sr)
+    per, sr = daily_report('20191024')
+    per.to_csv(r'e:\temp\per.csv')
+    sr.to_csv(r'e:\temp\sr.csv')
