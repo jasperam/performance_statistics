@@ -177,8 +177,8 @@ def download_ashare_daily_data(w, date_ = TODAY, is_overwrite_ = False):
     # forex 
     _quote_file_forex = os.path.join(_root, f'forex_{date_}.csv')
     if (not fsutils.is_file(_quote_file_forex)) or (fsutils.is_file(_quote_file_forex) and is_overwrite_):        
-        BENCHMARK = ['HKDCNY.EX']      
-        ret = set_data(w.wsd(BENCHMARK, "windcode,close", date_, date_, ""))
+        BENCHMARK = ['HKDCNY.EX','USDCNY.EX']
+        ret = set_data(w.wss(BENCHMARK,"windcode,close",f"tradeDate={date_};priceAdj=U;cycle=D"))
         if ret:
             df = pd.DataFrame.from_dict(ret)
             df.rename(columns={'windcode':'symbol'}, inplace=True)   
