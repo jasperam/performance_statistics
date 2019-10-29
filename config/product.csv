@@ -1,3 +1,2 @@
-product_id,commission,trader,product_name,sec_type,institution,min_commission,root_product_id
-15,0.00027,Harold,华润信托平衡,STOCK,光大证券,0,15
-15,0,Harold,华润信托平衡,FUTURE,光大期货,0,15
+product_id,commission,trader,product_name,sec_type,institution,min_commission,root_product_id,status
+97A,0.00012,Harold,高风险进取1F,STOCK,第一创业证券,0,97,running

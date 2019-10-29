@@ -1,13 +1,5 @@
 strategy_id,product_id,status,strategy_name
-80A_ARBT,80A,running,ARBT
-80A_DV,80A,running,DV
-80A_JD1000,80A,running,JD1000
-80B_MJCTA,80B,running,MJCTA
-80A_PETER,80A,running,PETER
-80A_PR,80A,running,PR
-80A_ZF502,80A,running,ZF502
-80A_ZS,80A,running,ZS
-80B_MJOPT,80B,running,MJOPT
-80A_ZSINTRADAY,80A,running,ZSINTRADAY
-80A_HEDGE,80A,running,HEDGE
-80A_T0,80A,running,T0
+97A_OTHER,97A,running,OTHER
+97A_ZF1000,97A,running,ZF1000_1300
+97A_DV,97A,running,DV
+97A_HEDGE,97A,running,HEDGE
