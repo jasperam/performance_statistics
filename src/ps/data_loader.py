@@ -214,6 +214,23 @@ def get_history_alpha(from_, to_):
     return ret
 
 
+def get_daily_alpha(date_):
+    sql = f'''
+        select trade_dt,strategy_name,alpha,turnover from (
+            select a.trade_dt,strategy_name,round(sum(alpha*stock_mv)/sum(stock_mv) ,2) as alpha, round(sum(a.stock_turnover/2*stock_mv)/sum(stock_mv) ,2) as turnover
+            from "performance" a where a.stock_mv!=0  
+            and a.trade_dt = '{date_}'
+            GROUP BY a.trade_dt,strategy_name
+            union
+            select trade_dt,strategy_name,round(avg(alpha),2) as alpha,0 as turnover
+            from "performance" where stock_mv=0 and trade_dt = '{date_}'
+            GROUP BY trade_dt,strategy_name) as foo
+        order by strategy_name,trade_dt
+    '''
+    ret = attributiondb.read(sql)
+    return ret
+
+
 def get_cumulative_bonus():
     sql = f'''
         select trade_dt,manager_name,cumulative_bonus,bonus,current_redemption,defer

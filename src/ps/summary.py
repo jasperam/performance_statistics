@@ -3,7 +3,7 @@
 # @author Neo Lin
 # @description check and statistics performance
 # @created 2019-09-23T11:28:55.643Z+08:00
-# @last-modified 2019-10-25T10:55:43.807Z+08:00
+# @last-modified 2019-10-30T11:16:38.272Z+08:00
 #
 import pandas as pd
 import numpy as np
@@ -11,7 +11,7 @@ import numpy as np
 from jt.utils.db import PgSQLLoader, SqlServerLoader
 from jt.utils.calendar import TradeCalendarDB
 from ps.data_loader import get_strategy_info, get_manager_info, get_benchmark_info, get_deduction, \
-    get_performance, get_history_alpha, get_cumulative_bonus, get_defer_bonus
+    get_performance, get_history_alpha, get_cumulative_bonus, get_defer_bonus, get_daily_alpha
 from ps.utils import save_result
 
 NAVDB = SqlServerLoader('trade71')
@@ -189,8 +189,8 @@ def daily_report(date_):
     per['bm_adjust_rate'] = per['bm'].apply(get_benchmark_rct())
     per['bm_adjust_pnl'] = per['stock_mv'] * per['bm_adjust_rate']
     
-    history = get_history_alpha(date_, date_)
-    per = per.merge(history, on='strategy_name')
+    history = get_daily_alpha(date_)
+    per = per.merge(history, on='strategy_name', how='left').fillna(0)
     per['adjust_pnl'] = per['pnl'] - per['bm_pnl'] - per['bm_adjust_pnl']
 
     all_per = get_performance('20190701', date_)
@@ -222,6 +222,6 @@ if __name__ == "__main__":
     # bonus, defer_bonus, sr = cal_monthly_performance(from_='20190701', to_='20190930')
     # sr.to_csv(r'e:\temp\x.csv')
     # print(sr)
-    per, sr = daily_report('20191024')
+    per, sr = daily_report('20191029')
     per.to_csv(r'e:\temp\per.csv')
     sr.to_csv(r'e:\temp\sr.csv')
