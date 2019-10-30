@@ -7,7 +7,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='ps',
-    version='0.1.8',
+    version='0.1.9',
     description="performace statistics",
     author='Neo',
     author_email='neo.lin@jaspercapital.com',
