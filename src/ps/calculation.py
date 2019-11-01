@@ -493,9 +493,9 @@ def daily_statistics(date_, acc_lists=None, new_account=None):
         calculate_dvd(date_, pos_end) 
 
     strategy_ids_ = ['95_MJOPT','80B_MJOPT','93C_MJOPT', '80B_MJCTA', '93A_MJCTA', '95_MJCTA', 
-        '80A_ARBT', '80A_ZS', '12_ZS']
+        '80A_ARBT','12_ARBT','82_ARBT','80A_ZS', '12_ZS', '82_ZS']
     bm_pnls_ = [196*0.03/245*10000, 1570*0.03/245*10000, 200*0.03/245*10000, 500*0.03/245*10000, 200*0.03/245*10000, 200*0.03/245*10000,
-        1400*0.03/245*10000, 700*0.03/245*10000, 247*0.03/245*10000]
+        1400*0.03/245*10000, 30*0.03/245*10000, 30*0.03/245*10000, 700*0.03/245*10000, 60*0.03/245*10000, 30*0.03/245*10000]
     cal_special_bm_pnl(date_,strategy_ids_,bm_pnls_)
 
     return stats
