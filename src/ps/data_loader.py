@@ -175,12 +175,22 @@ def cal_option_volume(date_):
     return ret
 
 
+def cal_cta_commission(date_):
+    sql = f"""
+        select account as strategy_id, sum(Commission+Fee) as cta_commission 
+        from dbo.JasperTradeDetail 
+        where trade_dt='{date_}' and type='CTA' GROUP BY account;
+    """    
+    ret = traderdb.read(sql)
+    return ret
+
+
 def get_deduction(from_, to_):
     sql = f"""
-        SELECT b.strategy_name,sum(a.pnl) as deduction 
-        FROM "one_time_deduction" a,"allocation" b
-        where a.trade_dt between '{from_}' and '{to_}' and a.strategy_id = b.strategy_id
-        group by b.strategy_name;
+        SELECT strategy_name,sum(pnl) as deduction 
+        FROM "one_time_deduction" a
+        where trade_dt between '{from_}' and '{to_}'
+        group by strategy_name;
     """    
     ret = attributiondb.read(sql)
     return ret
@@ -249,6 +259,16 @@ def get_defer_bonus(to_):
     ret = attributiondb.read(sql)
     return ret
     
+
+def get_argo_pnl(from_, to_):   
+    sql = f'''
+        select manager_name as argo_manager,strategy_name,sum(pnl) as argo_pnl
+        from "argo_pnl" where trade_dt between '{from_}' and '{to_}'
+        group by argo_manager, strategy_name
+    '''
+    ret = attributiondb.read(sql)
+    return ret
+
 
 if __name__ == "__main__":
     ret = get_defer_bonus('20200930')

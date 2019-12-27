@@ -3,7 +3,7 @@
 # @author Neo Lin
 # @description check and statistics performance
 # @created 2019-09-23T11:28:55.643Z+08:00
-# @last-modified 2019-10-30T11:16:38.272Z+08:00
+# @last-modified 2019-12-12T13:53:00.664Z+08:00
 #
 import pandas as pd
 import numpy as np
@@ -11,7 +11,7 @@ import numpy as np
 from jt.utils.db import PgSQLLoader, SqlServerLoader
 from jt.utils.calendar import TradeCalendarDB
 from ps.data_loader import get_strategy_info, get_manager_info, get_benchmark_info, get_deduction, \
-    get_performance, get_history_alpha, get_cumulative_bonus, get_defer_bonus, get_daily_alpha
+    get_performance, get_history_alpha, get_cumulative_bonus, get_defer_bonus, get_daily_alpha, get_argo_pnl
 from ps.utils import save_result
 
 NAVDB = SqlServerLoader('trade71')
@@ -115,6 +115,7 @@ def cal_monthly_performance(from_='20190701', to_=TODAY):
     turnover['level'] = turnover['turnover'].apply(lambda x: 'high' if x > 100 else ('mid' if x > 25 else 'low'))
     # deal with special strategy 
     turnover.loc['ARBT','level'] = 'mid'
+    turnover.loc['FANCTA100','level'] = 'mid'
     turnover.loc['ZS','level'] = 'mid'
     turnover.loc['MJCTA','level'] = 'high'
     turnover.loc['MJOPT','level'] = 'high'
@@ -135,16 +136,20 @@ def cal_monthly_performance(from_='20190701', to_=TODAY):
     deduction.set_index('strategy_name', inplace=True)
     sr = sr.merge(deduction, left_index=True, right_index=True, how='left').fillna(0)
     
+    # get argo pnl
+    argo_pnl = get_argo_pnl(from_, to_).set_index('strategy_name')
+    sr = sr.merge(argo_pnl, left_index=True, right_index=True, how='left').fillna(0)
+    sr['adjust_pnl'] = sr['pnl'] - sr['bm_pnl'] - sr['bm_adjust'] - sr['deduction'] - sr['argo_pnl']
+    
     # cal compliance rate
     sr['boundary'] = sr.apply(get_compliance_boundary(), axis=1)    
-    sr['compliance_rate'] = sr.apply(cal_compliance_rate(), axis=1)
-    sr['adjust_pnl'] = sr['pnl'] - sr['bm_pnl'] - sr['bm_adjust'] - sr['deduction']
+    sr['compliance_rate'] = sr.apply(cal_compliance_rate(), axis=1)    
     sr['dividend_rate'] = sr.apply(cal_dividend_rate(), axis=1)   
     sr['bonus'] = sr.apply(lambda x: 
         x['adjust_pnl']*x['dividend_rate']*x['compliance_rate'] if x['adjust_pnl']>0 else x['adjust_pnl']*x['dividend_rate'], axis=1)
     sr['start_dt'] = from_
     sr['end_dt'] = to_
-    
+        
     # save_result(sr.reset_index(), ATTDB, '"public"."statistics_detail"', ['start_dt', 'end_dt', 'strategy_name'])
     
     # cal every pm's performance
@@ -170,7 +175,7 @@ def cal_monthly_performance(from_='20190701', to_=TODAY):
     bonus['bonus'] = bonus.apply(lambda x:x['cumulative_bonus']-x['history_bonus'] if x['cumulative_bonus']-x['history_bonus']>0 else 0, axis=1)
     bonus['current_redemption'] = bonus['bonus'] * 0.8
     bonus['defer'] = bonus['bonus'] * 0.2
-    
+        
     # get defer bonus
     defer_bonus = get_defer_bonus(to_)
     
@@ -219,9 +224,12 @@ def daily_report(date_):
 if __name__ == "__main__":
     # jd_per = cal_jd_performance(from_='20191001', to_='20191030')
     # jd_per.to_csv(r'E:\temp\jd10.csv')    
-    # bonus, defer_bonus, sr = cal_monthly_performance(from_='20190701', to_='20190930')
-    # sr.to_csv(r'e:\temp\x.csv')
+    # bonus, defer_bonus, sr = cal_monthly_performance(from_='20190701', to_='20191031')
+    # bonus.to_csv(r'e:\temp\bonus.csv')
+    # defer_bonus.to_csv(r'e:\temp\defer_bonus10.csv')
+    # sr.to_csv(r'e:\temp\sr.csv')
     # print(sr)
-    per, sr = daily_report('20191029')
-    per.to_csv(r'e:\temp\per.csv')
-    sr.to_csv(r'e:\temp\sr.csv')
+    # per, sr = daily_report('20191029')
+    # per.to_csv(r'e:\temp\per.csv')
+    # sr.to_csv(r'e:\temp\sr.csv')
+    save_monthly_stat('20190701','20191130')

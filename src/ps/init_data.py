@@ -116,10 +116,10 @@ def download_ashare_daily_data(w, date_ = TODAY, is_overwrite_ = False):
         '''
         l_symbols = tradedb.read(sql)['WindCode'].values.tolist()
         if l_symbols:
-            ret = set_data(w.wss(f"{','.join(l_symbols)}","windcode,sec_name,pre_close,open,high,low,close,pre_settle,settle,chg,pct_chg,volume,amt,dealnum",
+            ret = set_data(w.wss(f"{','.join(l_symbols)}","windcode,sec_name,pre_close,open,high,low,close,pre_settle,settle,chg,pct_chg,volume,amt,dealnum,contractmultiplier",
                                 f"tradeDate={date_};priceAdj=U;cycle=D"))        
             df = pd.DataFrame.from_dict(ret).fillna(0)
-            df.rename(columns={'windcode':'symbol', 'sec_name':'name', 'chg':'change_price', 'pct_chg':'change_rate', 'amt':'amount'}, inplace=True)
+            df.rename(columns={'windcode':'symbol', 'sec_name':'name', 'chg':'change_price', 'pct_chg':'change_rate', 'amt':'amount', 'contractmultiplier':'multiplier'}, inplace=True)
             df.to_csv(_quote_file_option, encoding='gbk', index=0)
             cnt['option_cnt']=df.shape[0]
 
@@ -150,10 +150,10 @@ def download_ashare_daily_data(w, date_ = TODAY, is_overwrite_ = False):
         '''
         l_symbols = tradedb.read(sql)['WindCode'].values.tolist()   
         if l_symbols:
-            ret = set_data(w.wss(f"{','.join(l_symbols)}","windcode,pre_close,open,close,volume,amt,chg,pct_chg",f"tradeDate={date_};priceAdj=U;cycle=D"))        
+            ret = set_data(w.wss(f"{','.join(l_symbols)}","windcode,pre_close,open,close,settle,volume,amt,chg,pct_chg,contractmultiplier",f"tradeDate={date_};priceAdj=U;cycle=D"))        
             ret['symbol'] = l_symbols
             df = pd.DataFrame.from_dict(ret).fillna(0) 
-            df.rename(columns={'amt':'amount', 'chg':'change_price', 'pct_chg':'change_rate'}, inplace=True)
+            df.rename(columns={'amt':'amount', 'chg':'change_price', 'pct_chg':'change_rate','contractmultiplier':'multiplier'}, inplace=True)
             df.to_csv(_quote_file_cta, index=0)
             cnt['cta_cnt']=df.shape[0]
         
@@ -228,10 +228,10 @@ def download_daily_data(date_ = TODAY, is_overwrite_ = False):
     if calendar.is_trading_date(date_):
         temp_r = download_ashare_daily_data(w, date_, is_overwrite_)
         r=pd.concat([r,temp_r], axis=1)
-
-    if calendar.is_trading_date(date_, exchange_='hk'):
-        temp_r = download_hk_daily_data(w, date_, is_overwrite_)
-        r=pd.concat([r,temp_r], axis=1)
+    
+    # if calendar.is_trading_date(date_, exchange_='hk'):
+    temp_r = download_hk_daily_data(w, date_, is_overwrite_)
+    r=pd.concat([r,temp_r], axis=1)
     
     w.close()
     return r
@@ -254,4 +254,4 @@ if __name__ == "__main__":
     # for d in date_list:
     #     download_daily_data(d)
     # pass
-    download_daily_data('20190918')
+    download_daily_data('20191226',is_overwrite_ = True)
