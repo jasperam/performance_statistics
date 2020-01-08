@@ -60,7 +60,7 @@ def get_benchmark_rct(BM):
 def get_asset(account_detail):
     def _inner(strategy_):
         if (strategy_ == '80_MJOPT') or (strategy_ == '80B_MJOPT'):
-            asset = 10000000
+            asset = 3000000
         else:
             account_id = ALLOCATION.loc[ALLOCATION['strategy_id']==strategy_, 'root_product_id'].values[0]        
             asset = account_detail.loc[account_detail['account_id']==account_id, 'totalasset'].values[0]
@@ -538,13 +538,15 @@ def daily_statistics(date_=calendar.get_trading_date(), acc_lists=None, new_acco
         calculate_dvd(date_, pos_end) 
 
     strategy_ids_ = ['95_MJOPT','80B_MJOPT','93C_MJOPT', '80B_MJCTA', '93A_MJCTA', '95_MJCTA', 
-        '99_MJCTA',
-        '80A_ARBT','12_ARBT','82_ARBT','99_ARBT','80A_ZS','12_ZS','82_ZS',
-        '99_FANCTA100','80D_FANCTA100']
-    bm_pnls_ = [196*0.03/245*10000, 500*0.03/245*10000, 200*0.03/245*10000, 1000*0.03/245*10000, 200*0.03/245*10000, 200*0.03/245*10000,
-        200*0.03/245*10000,
-        2000*0.03/245*10000, 30*0.03/245*10000, 30*0.03/245*10000, 200*0.03/245*10000, 500*0.03/245*10000, 60*0.03/245*10000, 30*0.03/245*10000,
-        200*0.03/245*10000, 900*0.03/245*10000]
+        '99_MJCTA','100_MJCTA',
+        '80A_ARBT','12_ARBT','82_ARBT','99_ARBT','100_ARBT'
+        '80A_ZS','12_ZS','82_ZS',
+        '99_FANCTA100','80D_FANCTA100','100_FANCTA100']
+    bm_pnls_ = [196*0.03/245*10000, 300*0.03/245*10000, 200*0.03/245*10000, 1000*0.03/245*10000, 200*0.03/245*10000, 200*0.03/245*10000,
+        200*0.03/245*10000, 133*0.03/245*10000, 
+        2000*0.03/245*10000, 30*0.03/245*10000, 30*0.03/245*10000, 200*0.03/245*10000, 134*0.03/245*10000,
+        500*0.03/245*10000, 60*0.03/245*10000, 30*0.03/245*10000,
+        200*0.03/245*10000, 900*0.03/245*10000, 133*0.03/245*10000]
     cal_special_bm_pnl(date_,strategy_ids_,bm_pnls_)
 
     return stats
@@ -571,10 +573,10 @@ if __name__ == "__main__":
     #             '79_OTHER','80A_OTHER','80_OTHER','82_OTHER','84_OTHER','85A_OTHER','85B_OTHER','89_OTHER',
     #             '91_OTHER','93A_OTHER','93B_OTHER','93_OTHER','06_DV','01_DV','01_PETER','01_ZF502']
         # daily_statistics(d, ['80B_MJOPT']) #, new_account=pd.DataFrame({'account_id':['95'], 'totalasset':[2000000]})
-    daily_statistics('20191226')
-    # date_ = '20191216'
-    # strategy_ids_ = ['80D_FANCTA100']
-    # bm_pnls_ = [500*0.03/245*10000]
-    # cal_special_bm_pnl(date_,strategy_ids_,bm_pnls_)
+    # daily_statistics('20191226')
+    date_ = '20200103'
+    strategy_ids_ = ['100_FANCTA100']
+    bm_pnls_ = [133*0.03/245*10000]
+    cal_special_bm_pnl(date_,strategy_ids_,bm_pnls_)
     pass
 

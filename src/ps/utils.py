@@ -41,45 +41,49 @@ def get_security_type(symbol_):
     _sec_type_future = 'FUTURE'
     _sec_type_option = 'OPTION'
     _sec_type_cta = 'CTA'
-
-    # index future
-    if symbol_.endswith('.CFE'):
-        return _sec_type_future
-    # cta
-    if (symbol_.endswith('.CZC') or symbol_.endswith('.SHF') or symbol_.endswith('.DCE')) and ('-' not in symbol_):
-        return _sec_type_cta
-    # repo
-    if symbol_.startswith('204') or (symbol_.startswith('88888')):
-        return _sec_type_repo
-    # stock
-    if (symbol_.startswith('0')) and (symbol_.endswith('.SZ')) or \
-            (symbol_.startswith('3')) and (symbol_.endswith('.SZ')) or \
-            (symbol_.startswith('6') and symbol_.endswith('.SH')):
-        return _sec_type_stock
-    # hk
-    if (symbol_.startswith('CUSF')) and (symbol_.endswith('.HK')):  # CUSF1906.HK
-        return _sec_type_fx
-    elif symbol_.endswith('.HK'):
-        return _sec_type_stock_hk
-    # 50etf/300etf option
-    if (symbol_.startswith('1000') and symbol_.endswith('.SH') and len(symbol_) > 9) or \
-        (symbol_.startswith('9000') and symbol_.endswith('.SZ') and len(symbol_) > 9) or \
-        (('-' in symbol_) and len(symbol_) > 9):
-        return _sec_type_option
-    # bond
-    if (symbol_.startswith('1')) and (symbol_.endswith('.SH')) or \
-            (symbol_.startswith('1')) and (symbol_.endswith('.SZ')):
-        return _sec_type_bond
-    # H00905.CSI, N00905.CSI
-    if (symbol_.startswith('H') or symbol_.startswith('N')) and (symbol_.endswith('.CSI')):
-        return _sec_type_fund # _sec_type_index
-    # fund
-    if (symbol_.endswith('.OF')) or \
-            (symbol_.startswith('51') and symbol_.endswith('.SH')):
-        return _sec_type_fund
-
-    if symbol_.endswith('.OC'):
-        return _sec_type_oc
+    
+    if symbol_[0:1].isalpha(): # the first char is alphabet, include chinese
+        # index future
+        if symbol_.startswith('IC') or symbol_.startswith('IF') or symbol_.startswith('IH'):
+            return _sec_type_future        
+        # cta
+        elif (symbol_.endswith('.CZC') or symbol_.endswith('.SHF') or symbol_.endswith('.DCE')) \
+            and ('-' not in symbol_) and (len(symbol_) < 11):
+            return _sec_type_cta
+        # option
+        else:
+            return _sec_type_option
+    else:        
+        # repo
+        if symbol_.startswith('204') or (symbol_.startswith('88888')):
+            return _sec_type_repo
+        # stock
+        if (symbol_.startswith('0')) and (symbol_.endswith('.SZ')) or \
+                (symbol_.startswith('3')) and (symbol_.endswith('.SZ')) or \
+                (symbol_.startswith('6') and symbol_.endswith('.SH')):
+            return _sec_type_stock
+        # hk
+        if (symbol_.startswith('CUSF')) and (symbol_.endswith('.HK')):  # CUSF1906.HK
+            return _sec_type_fx
+        elif symbol_.endswith('.HK'):
+            return _sec_type_stock_hk        
+        # bond
+        if (symbol_.startswith('1')) and (symbol_.endswith('.SH')) or \
+                (symbol_.startswith('1')) and (symbol_.endswith('.SZ')):
+            return _sec_type_bond
+        # H00905.CSI, N00905.CSI
+        if (symbol_.startswith('H') or symbol_.startswith('N')) and (symbol_.endswith('.CSI')):
+            return _sec_type_fund # _sec_type_index
+        # fund
+        if (symbol_.endswith('.OF')) or \
+                (symbol_.startswith('51') and symbol_.endswith('.SH')):
+            return _sec_type_fund
+        # oc
+        if symbol_.endswith('.OC'):
+            return _sec_type_oc
+        # option
+        if (len(symbol_) >= 11):
+            return _sec_type_option
 
     _logger.info(f'unknown type in attach_security_type for {symbol_}')
     return _sec_type_default
