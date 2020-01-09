@@ -1,7 +1,6 @@
 import pandas as pd
 import datetime
 
-from WindPy import w
 from ps.data_loader import get_pos, get_trade, get_benchmark_info, get_alloction, \
     get_account_detail, get_daily_quote, get_commission_rate, calculate_dvd, cal_option_volume, \
     get_sc_members, cal_cta_commission

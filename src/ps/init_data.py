@@ -177,11 +177,12 @@ def download_ashare_daily_data(w, date_ = TODAY, is_overwrite_ = False):
     # forex 
     _quote_file_forex = os.path.join(_root, f'forex_{date_}.csv')
     if (not fsutils.is_file(_quote_file_forex)) or (fsutils.is_file(_quote_file_forex) and is_overwrite_):        
-        BENCHMARK = ['HKDCNY.EX','USDCNY.EX']
-        ret = set_data(w.wss(BENCHMARK,"windcode,close",f"tradeDate={date_};priceAdj=U;cycle=D"))
+        BENCHMARK = ['HKDCNY.EX','USDCNY.EX','LIUSD1M.IR','LIUSD3M.IR']
+        ret = set_data(w.wss(BENCHMARK,"windcode,pre_close,close,pct_chg",f"tradeDate={date_};priceAdj=U;cycle=D"))
         if ret:
             df = pd.DataFrame.from_dict(ret)
-            df.rename(columns={'windcode':'symbol'}, inplace=True)   
+            df['symbol'] = BENCHMARK
+            # df.rename(columns={'windcode':'symbol'}, inplace=True)   
             df.to_csv(_quote_file_forex, index=0)
             cnt['forex_cnt']=df.shape[0]
 
