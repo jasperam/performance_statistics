@@ -17,11 +17,11 @@ def check_allocation(date_ = today):
     check if there is any strategy not been allocated
     '''
     sql = f'''
-        SELECT distinct b.strategy_id FROM "position" a, "product_allocation" b where a."date" = '{date_}' and a.account_id=b.strategy_id
+        SELECT distinct account_id FROM "position" a where a."date" = '{date_}' and position('_' in account_id)>0
         union
-        SELECT distinct b.strategy_id FROM "transaction" a, "product_allocation" b where a."date" = '{date_}' and a.account_id=b.strategy_id
+        SELECT distinct account_id FROM "transaction" a where a."date" = '{date_}' and position('_' in account_id)>0
     '''
-    qi_strategy = qidb.read(sql)
+    qi_strategy = qidb.read(sql).rename(columns={'account_id':'strategy_id'})    
     att_strategy = get_alloction()
     att_strategy = att_strategy.loc[:,'strategy_id'].drop_duplicates()
     ret = pd.merge(qi_strategy, att_strategy, on='strategy_id', how='outer', indicator=True)
@@ -35,4 +35,4 @@ def check_allocation(date_ = today):
         'strategy_id'])
 
 if __name__ == "__main__":
-    check_allocation('20191030')
+    check_allocation('20200214')
