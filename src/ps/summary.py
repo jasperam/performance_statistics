@@ -3,7 +3,7 @@
 # @author Neo Lin
 # @description check and statistics performance
 # @created 2019-09-23T11:28:55.643Z+08:00
-# @last-modified 2019-12-12T13:53:00.664Z+08:00
+# @last-modified 2020-03-16T20:54:25.381Z+08:00
 #
 import pandas as pd
 import numpy as np
@@ -222,14 +222,15 @@ def daily_report(date_):
 
 
 if __name__ == "__main__":
-    # jd_per = cal_jd_performance(from_='20191001', to_='20191030')
-    # jd_per.to_csv(r'E:\temp\jd10.csv')    
-    # bonus, defer_bonus, sr = cal_monthly_performance(from_='20190701', to_='20191031')
+    # jd_per = cal_jd_performance(from_='20200101', to_='20200131')
+    # jd_per.to_csv(r'E:\temp\jd01.csv')    
+    # bonus, defer_bonus, sr = cal_monthly_performance(from_='20190701', to_='20191231')
     # bonus.to_csv(r'e:\temp\bonus.csv')
-    # defer_bonus.to_csv(r'e:\temp\defer_bonus10.csv')
+    # defer_bonus.to_csv(r'e:\temp\defer_bonus.csv')
     # sr.to_csv(r'e:\temp\sr.csv')
     # print(sr)
-    # per, sr = daily_report('20191029')
+    per, sr = daily_report('20200313')
+    # print(per)
     # per.to_csv(r'e:\temp\per.csv')
     # sr.to_csv(r'e:\temp\sr.csv')
-    save_monthly_stat('20190701','20191130')
+    # save_monthly_stat('20190701','20200131')

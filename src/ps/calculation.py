@@ -9,7 +9,7 @@ from jt.utils.misc.log import Logger
 from jt.utils.calendar.api_calendar import TradeCalendarDB
 from jt.utils.db import PgSQLLoader
 from jt.utils.misc import read_cfg
-from jt.utils.time import datetime2string
+from jt.utils.time import datetime2string, num_of_week
 
 FEE_RATE = 1e-3
 
@@ -32,6 +32,7 @@ _sec_type_future = 'FUTURE'
 _sec_type_option = 'OPTION'
 _sec_type_qfii = 'QFII'
 _sec_type_cta = 'CTA'
+_sec_type_margin = 'MARGIN'
 
 calendar = TradeCalendarDB()
 attributiondb = PgSQLLoader('attribution')
@@ -47,12 +48,15 @@ def get_multiplier():
             return 1 # stock/fund -> 1
     return _inner
 
-def get_benchmark_rct(BM):
+def get_benchmark_rct(BM, date_):
     def _inner(strategy_):
-        f_ = ALLOCATION.loc[ALLOCATION['strategy_id']==strategy_, 'bm'].values[0]    
+        f_ = ALLOCATION.loc[ALLOCATION['strategy_id']==strategy_, 'bm'].values[0]
+        # judge if the date is the third week        
+        if num_of_week(date_) == 3 and f_ == '#6': # use IC01.CFE if it's the third week else IC00.CFE
+            f_ = '#7'
         for x, y in zip(BM['bm_id'], BM['change_rate'].astype(str)):
             # if isinstance(x, str):
-            f_ = f_.replace(x, y)
+            f_ = f_.replace(x, y)      
         return eval(f_)/100
     return _inner
 
@@ -77,11 +81,15 @@ def insert_market_data(df, prices):
     return df
 
 def cal_pos_return(pos):    
-    pos['multiplier'] = 1
-    pos['stock_pos_pnl'] = pos['change_price'] * pos['volume'] * pos['multiplier']
+    pos['multiplier'] = 1    
     pos['stock_amount'] = pos['close'] * pos['volume'] * pos['multiplier']
-    pos['stock_pre_amount'] = pos['pre_close'] * pos['volume'] * pos['multiplier']
-    pos_stats = pos[['strategy_id', 'stock_pos_pnl', 'stock_amount', 'stock_pre_amount']].groupby(
+    pos['stock_pre_amount'] = pos['pre_close'] * pos['volume'] * pos['multiplier']    
+    _allocation = ALLOCATION.loc[ALLOCATION.sec_type==_sec_type_margin, ['strategy_id','commission','min_commission']]
+    pos = pos.merge(_allocation, on='strategy_id', how='left').fillna(0)
+    pos['marginfee'] = pos.apply(lambda x: abs(x['stock_amount']) * (x['commission']-0.025) / 250 if x['commission']>0 else 0, 
+                                axis=1) # Simple handling of currency interest rate of 2%
+    pos['stock_pos_pnl'] = pos['change_price'] * pos['volume'] * pos['multiplier'] - pos['marginfee']
+    pos_stats = pos[['strategy_id', 'stock_pos_pnl', 'stock_amount', 'stock_pre_amount', 'marginfee']].groupby(
         by='strategy_id').sum().reset_index()
     tmp_counts = pos[['strategy_id','date']].groupby('strategy_id').count().reset_index()
     tmp_counts.rename(columns={'date':'stock_pos_counts'}, inplace=True)
@@ -236,7 +244,7 @@ def cal_cta_trade_return(trade, date_):
 def merge_pos_trade_stats(date_, pos_stats, trade_stats, account_detail, BM):
     stats = pd.merge(pos_stats, trade_stats, how='outer', on='strategy_id', suffixes=('_pos','_trade')).fillna(0)
     stats['trade_dt'] = date_
-    stats['bm'] = stats['strategy_id'].apply(get_benchmark_rct(BM))    
+    stats['bm'] = stats['strategy_id'].apply(get_benchmark_rct(BM, date_))    
     stats['bm'] = stats['bm'] * 10000
     stats['stock_amount'] = stats['stock_amount'] + stats['stock_trade_net_close']
     stats['hk_stock_amount'] = stats['hk_stock_amount'] + stats['hk_stock_trade_net_close']    
@@ -275,12 +283,12 @@ def cal_type_1(stats):
     """    
     # summary in stats, insert into DB  
     stats['ret'] = stats.apply(lambda x: \
-        x['pnl']/x['stock_pre_amount']*10000 if x['stock_pre_amount']>0 else 0, axis=1)
-    stats['alpha'] = stats['ret'] - stats['bm']    
+        x['pnl']/x['stock_pre_amount']*10000 if abs(x['stock_pre_amount'])>0 else 0, axis=1)
+    stats['alpha'] = stats.apply(lambda x: x['ret'] - x['bm'] if x['stock_pre_amount']>=0 else x['bm'] - x['ret'], axis=1)
     stats['pos_ret'] = stats.apply(lambda x: \
-        x['pos_pnl']/x['stock_pre_amount']*10000 if x['stock_pre_amount']>0 else 0, axis=1)
+        x['pos_pnl']/x['stock_pre_amount']*10000 if abs(x['stock_pre_amount'])>0 else 0, axis=1)
     stats['trade_ret'] = stats.apply(lambda x: \
-        x['trade_pnl']/x['stock_pre_amount']*10000 if x['stock_pre_amount']>0 else 0, axis=1)     
+        x['trade_pnl']/x['stock_pre_amount']*10000 if abs(x['stock_pre_amount'])>0 else 0, axis=1)     
     stats['bm_pnl'] = stats['stock_pre_amount'] * stats['bm'] / 10000
     
     return stats
@@ -352,6 +360,10 @@ def daily_statistics(date_=calendar.get_trading_date(), acc_lists=None, new_acco
             index_prices = hkindex_prices
             forex_prices = get_daily_quote(calendar.get_trading_date(date_), 'forex')
     
+    tmp_fu_price = future_prices.loc[:,['symbol','pre_close','close']]
+    tmp_fu_price['change_price'] = tmp_fu_price['close'] - tmp_fu_price['pre_close']
+    tmp_fu_price['change_rate'] = (tmp_fu_price['close'] / tmp_fu_price['pre_close'] - 1) * 100
+    index_prices = index_prices.append(tmp_fu_price)
     BM = BM.merge(index_prices, left_on='bm_symbol', right_on='symbol', how='left') 
     account_detail = get_account_detail(calendar.get_trading_date(date_, -1), new_account)
 
@@ -360,7 +372,7 @@ def daily_statistics(date_=calendar.get_trading_date(), acc_lists=None, new_acco
             pos = insert_market_data(pos, stock_prices)
             ret = cal_pos_return(pos)
         else:
-            ret = pd.DataFrame(columns=['strategy_id', 'stock_pos_pnl', 'stock_amount', 'stock_pre_amount', 'stock_pos_counts'])
+            ret = pd.DataFrame(columns=['strategy_id', 'stock_pos_pnl', 'stock_amount', 'stock_pre_amount', 'marginfee', 'stock_pos_counts'])
         return ret
 
     def cal_trade_stock(trade):
@@ -514,7 +526,7 @@ def daily_statistics(date_=calendar.get_trading_date(), acc_lists=None, new_acco
             performance_stats = tmp_stats[['trade_dt','strategy_id','ret','bm','alpha',
             'pos_ret','trade_ret','pnl','pos_pnl','trade_pnl','stock_mv',
             'fee','commission','buy','sell','trade_net','stock_mv_ratio',
-            'product_asset','stock_turnover','update_time','bm_pnl','dvd_amount','strategy_name']]
+            'product_asset','stock_turnover','update_time','bm_pnl','dvd_amount','strategy_name','marginfee']]
 
             if not performance_stats.empty:
                 save_result(performance_stats, attributiondb, '"public"."performance"', ['trade_dt', 'strategy_id'])
@@ -526,7 +538,7 @@ def daily_statistics(date_=calendar.get_trading_date(), acc_lists=None, new_acco
             'fund_pos_pnl','fund_trade_pnl','fund_buy','fund_sell','fund_commission','fund_amount',
             'hk_stock_pos_pnl','hk_stock_trade_pnl','hk_stock_buy','hk_stock_sell','hk_stock_turnover',
             'hk_stock_fee','hk_stock_commission','hk_stock_amount','hk_stock_pos_counts','hk_stock_forex',
-            'cta_pos_pnl','cta_trade_pnl','cta_buy','cta_sell','cta_commission','cta_amount']]
+            'cta_pos_pnl','cta_trade_pnl','cta_buy','cta_sell','cta_commission','cta_amount','marginfee']]
 
             if not detail_stats.empty:
                 save_result(detail_stats, attributiondb, '"public"."classcification_detail"', ['trade_dt', 'strategy_id'])
@@ -537,13 +549,13 @@ def daily_statistics(date_=calendar.get_trading_date(), acc_lists=None, new_acco
         calculate_dvd(date_, pos_end) 
 
     strategy_ids_ = ['95_MJOPT','80B_MJOPT','93C_MJOPT', '80B_MJCTA', '93A_MJCTA', '95_MJCTA', 
-        '99_MJCTA','100_MJCTA',
-        '80A_ARBT','12_ARBT','82_ARBT','99_ARBT','100_ARBT'
+        '99A_MJCTA','100_MJCTA',
+        '80A_ARBT','12_ARBT','82_ARBT','99A_ARBT','100_ARBT','80E_ARBT',
         '80A_ZS','12_ZS','82_ZS',
-        '99_FANCTA100','80D_FANCTA100','100_FANCTA100']
+        '99B_FANCTA100','80D_FANCTA100','100_FANCTA100']
     bm_pnls_ = [196*0.03/245*10000, 300*0.03/245*10000, 200*0.03/245*10000, 1000*0.03/245*10000, 200*0.03/245*10000, 200*0.03/245*10000,
         200*0.03/245*10000, 133*0.03/245*10000, 
-        2000*0.03/245*10000, 30*0.03/245*10000, 30*0.03/245*10000, 200*0.03/245*10000, 134*0.03/245*10000,
+        2000*0.03/245*10000, 30*0.03/245*10000, 30*0.03/245*10000, 200*0.03/245*10000, 134*0.03/245*10000, 500*0.03/245*10000,
         500*0.03/245*10000, 60*0.03/245*10000, 30*0.03/245*10000,
         200*0.03/245*10000, 900*0.03/245*10000, 133*0.03/245*10000]
     cal_special_bm_pnl(date_,strategy_ids_,bm_pnls_)
@@ -572,10 +584,10 @@ if __name__ == "__main__":
     #             '79_OTHER','80A_OTHER','80_OTHER','82_OTHER','84_OTHER','85A_OTHER','85B_OTHER','89_OTHER',
     #             '91_OTHER','93A_OTHER','93B_OTHER','93_OTHER','06_DV','01_DV','01_PETER','01_ZF502']
         # daily_statistics(d, ['80B_MJOPT']) #, new_account=pd.DataFrame({'account_id':['95'], 'totalasset':[2000000]})
-    # daily_statistics('20191226')
-    date_ = '20200103'
-    strategy_ids_ = ['100_FANCTA100']
-    bm_pnls_ = [133*0.03/245*10000]
-    cal_special_bm_pnl(date_,strategy_ids_,bm_pnls_)
+    daily_statistics('20200313',['93A_RQ'])
+    # date_ = '20200103'
+    # strategy_ids_ = ['100_FANCTA100']
+    # bm_pnls_ = [133*0.03/245*10000]
+    # cal_special_bm_pnl(date_,strategy_ids_,bm_pnls_)
     pass
 

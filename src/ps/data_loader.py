@@ -211,7 +211,8 @@ def get_history_alpha(from_, to_):
     sql = f'''
         select trade_dt,strategy_name,alpha,turnover from (
             select a.trade_dt,strategy_name,round(sum(alpha*stock_mv)/sum(stock_mv) ,2) as alpha, round(sum(a.stock_turnover/2*stock_mv)/sum(stock_mv) ,2) as turnover
-            from "performance" a, "classcification_detail" b where a.stock_mv!=0 and a.trade_dt=b.trade_dt and a.strategy_id=b.strategy_id and (b.stock_pos_counts>=7 or b.hk_stock_pos_counts>0)  
+            from "performance" a, "classcification_detail" b where a.stock_mv!=0 and a.trade_dt=b.trade_dt and a.strategy_id=b.strategy_id 
+            and (b.stock_pos_counts>=7 or b.hk_stock_pos_counts>0 or a.strategy_name in ('RQ'))  
             and a.trade_dt between '{from_}' and '{to_}' and abs(a.trade_net)/a.stock_mv<=0.5
             GROUP BY a.trade_dt,strategy_name
             union

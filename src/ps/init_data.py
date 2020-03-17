@@ -96,7 +96,7 @@ def download_ashare_daily_data(w, date_ = TODAY, is_overwrite_ = False):
     if (not fsutils.is_file(_quote_file_future)) or (fsutils.is_file(_quote_file_future) and is_overwrite_):     
         sql = f'''            
             SELECT a.S_INFO_WINDCODE as symbol,S_DQ_PRESETTLE as pre_settle,S_DQ_SETTLE as settle,b.s_dq_close as pre_close,
-                    a.S_DQ_CLOSE as [close],S_DQ_SETTLE as settle,S_DQ_VOLUME as volume,S_DQ_AMOUNT as amount,S_DQ_OI as oi
+                    a.S_DQ_CLOSE as [close],S_DQ_VOLUME as volume,S_DQ_AMOUNT as amount,S_DQ_OI as oi
             FROM [dbo].[CINDEXFUTURESEODPRICES] as a 
             join (select s_info_windcode, s_dq_close from [dbo].[CINDEXFUTURESEODPRICES] where TRADE_DT='{y_date_}') as b 
             on a.TRADE_DT='{date_}' and a.S_INFO_WINDCODE=b.s_info_windcode
@@ -185,6 +185,23 @@ def download_ashare_daily_data(w, date_ = TODAY, is_overwrite_ = False):
             # df.rename(columns={'windcode':'symbol'}, inplace=True)   
             df.to_csv(_quote_file_forex, index=0)
             cnt['forex_cnt']=df.shape[0]
+
+    # cash
+    _quote_file_cash = os.path.join(_root, f'cash_{date_}.csv')
+    if (not fsutils.is_file(_quote_file_cash)) or (fsutils.is_file(_quote_file_cash) and is_overwrite_):
+        sql = f'''
+            SELECT distinct WindCode FROM [dbo].[JasperPosition] where trade_dt = '{y_date_}' and type='C'
+            union
+            SELECT distinct WindCode FROM [dbo].[JasperTradeDetail] where trade_dt = '{date_}' and type='C'
+        '''
+        l_symbols = tradedb.read(sql)['WindCode'].values.tolist()   
+        if l_symbols:
+            ret = set_data(w.wss(f"{','.join(l_symbols)}","windcode,pre_close,open,close,chg,pct_chg,trade_status,mmf_annualizedyield",f"tradeDate={date_};priceAdj=U;cycle=D"))
+            ret['symbol'] = l_symbols            
+            df = pd.DataFrame.from_dict(ret).fillna(0) 
+            df.rename(columns={'amt':'amount', 'chg':'change_price', 'pct_chg':'change_rate'}, inplace=True)
+            df.to_csv(_quote_file_cash, encoding='gbk', index=0)
+            cnt['cash_cnt']=df.shape[0]
 
     return cnt
 
