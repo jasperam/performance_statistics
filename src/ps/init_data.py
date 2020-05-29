@@ -95,11 +95,12 @@ def download_ashare_daily_data(w, date_ = TODAY, is_overwrite_ = False):
     _quote_file_future = os.path.join(_root, f'future_{date_}.csv')
     if (not fsutils.is_file(_quote_file_future)) or (fsutils.is_file(_quote_file_future) and is_overwrite_):     
         sql = f'''            
-            SELECT a.S_INFO_WINDCODE as symbol,S_DQ_PRESETTLE as pre_settle,S_DQ_SETTLE as settle,b.s_dq_close as pre_close,
+            SELECT a.S_INFO_WINDCODE as symbol,S_DQ_PRESETTLE as pre_settle,S_DQ_SETTLE as settle,ISNULL(b.s_dq_close, 0) as pre_close,
                     a.S_DQ_CLOSE as [close],S_DQ_VOLUME as volume,S_DQ_AMOUNT as amount,S_DQ_OI as oi
             FROM [dbo].[CINDEXFUTURESEODPRICES] as a 
-            join (select s_info_windcode, s_dq_close from [dbo].[CINDEXFUTURESEODPRICES] where TRADE_DT='{y_date_}') as b 
-            on a.TRADE_DT='{date_}' and a.S_INFO_WINDCODE=b.s_info_windcode
+            left join (select s_info_windcode, s_dq_close from [dbo].[CINDEXFUTURESEODPRICES] where TRADE_DT='{y_date_}') as b 
+            on a.S_INFO_WINDCODE=b.s_info_windcode
+            where a.TRADE_DT='{date_}' order by symbol
         '''
         df = winddb.read(sql)
         if not df.empty:
@@ -267,9 +268,10 @@ def copy_extract_kline_files(date_=TODAY, is_overwrite_=False):
 
 if __name__ == "__main__":
     # init_db_info()  
-    # download_daily_data()  
+    download_daily_data()  
     # date_list = calendar.get_trading_calendar(from_='20190913', to_='20190911')
     # for d in date_list:
     #     download_daily_data(d)
     # pass
-    download_daily_data('20191226',is_overwrite_ = True)
+    # download_daily_data('20191226',is_overwrite_ = True)
+    
