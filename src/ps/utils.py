@@ -50,6 +50,9 @@ def get_security_type(symbol_):
         elif (symbol_.endswith('.CZC') or symbol_.endswith('.SHF') or symbol_.endswith('.DCE')) \
             and ('-' not in symbol_) and (len(symbol_) < 11):
             return _sec_type_cta
+        # index swap -> fund
+        elif (symbol_.startswith('H') or symbol_.startswith('N')) and (symbol_.endswith('.CSI')):
+            return _sec_type_fund
         # option
         else:
             return _sec_type_option
@@ -68,8 +71,8 @@ def get_security_type(symbol_):
         elif symbol_.endswith('.HK'):
             return _sec_type_stock_hk        
         # bond
-        if (symbol_.startswith('1')) and (symbol_.endswith('.SH')) or \
-                (symbol_.startswith('1')) and (symbol_.endswith('.SZ')):
+        if ((symbol_.startswith('1')) and (symbol_.endswith('.SH')) or \
+                (symbol_.startswith('1')) and (symbol_.endswith('.SZ'))) and (len(symbol_)<=9):
             return _sec_type_bond
         # H00905.CSI, N00905.CSI
         if (symbol_.startswith('H') or symbol_.startswith('N')) and (symbol_.endswith('.CSI')):
