@@ -7,7 +7,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='ps',
-    version='0.1.17',
+    version='0.1.21',
     description="performace statistics",
     author='Neo',
     author_email='neo.lin@jaspercapital.com',
@@ -18,6 +18,7 @@ setup(
          'ps': [
              'cfg/*.ini',
              'cfg/*.yaml',
+             'data/*.csv',
          ]
     },
     install_requires=[        
