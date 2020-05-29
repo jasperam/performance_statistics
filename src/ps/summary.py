@@ -3,7 +3,7 @@
 # @author Neo Lin
 # @description check and statistics performance
 # @created 2019-09-23T11:28:55.643Z+08:00
-# @last-modified 2020-03-16T20:54:25.381Z+08:00
+# @last-modified 2020-05-08T11:01:08.997Z+08:00
 #
 import pandas as pd
 import numpy as np
@@ -154,15 +154,19 @@ def cal_monthly_performance(from_='20190701', to_=TODAY):
     
     # cal every pm's performance
     bonus = sr.loc[:,['bonus','manager_id','manager_name']]
-    dv_record = bonus.loc['DV']
-    dv_record['bonus'] = dv_record['bonus']/2
-    dv_record['manager_id'] = '06'
-    dv_record['manager_name'] = 'Peter'
-    dv_record.name = 'DV1'
-    
-    # special deal to DV 0.5->Dox, 0.5->Peter   
-    bonus.loc['DV','bonus']=bonus.loc['DV','bonus']/2
-    bonus = bonus.append(dv_record)
+    try:
+        dv_record = bonus.loc['DV']
+        dv_record['bonus'] = dv_record['bonus']/2
+        dv_record['manager_id'] = '06'
+        dv_record['manager_name'] = 'Peter'
+        dv_record.name = 'DV1'
+        
+        # special deal to DV 0.5->Dox, 0.5->Peter   
+        bonus.loc['DV','bonus']=bonus.loc['DV','bonus']/2
+        bonus = bonus.append(dv_record)
+    except KeyError:
+        pass
+        
     bonus = bonus.groupby('manager_name')[['bonus']].sum()
     bonus.rename(columns={'bonus':'cumulative_bonus'}, inplace=True)
 
@@ -222,15 +226,16 @@ def daily_report(date_):
 
 
 if __name__ == "__main__":
-    # jd_per = cal_jd_performance(from_='20200101', to_='20200131')
+    # jd_per = cal_jd_performance(from_='20191001', to_='20200305')
     # jd_per.to_csv(r'E:\temp\jd01.csv')    
-    # bonus, defer_bonus, sr = cal_monthly_performance(from_='20190701', to_='20191231')
-    # bonus.to_csv(r'e:\temp\bonus.csv')
-    # defer_bonus.to_csv(r'e:\temp\defer_bonus.csv')
-    # sr.to_csv(r'e:\temp\sr.csv')
+    # bonus, defer_bonus, sr = cal_monthly_performance(from_='20190701', to_='20200228')
+    # bonus.to_excel(r'e:\temp\bonus_202002.xlsx')
+    # defer_bonus.to_excel(r'e:\temp\defer_bonus_202002.xlsx')
+    # sr.to_excel(r'e:\temp\sr_202002.xlsx')
     # print(sr)
-    per, sr = daily_report('20200313')
+    # per, sr = daily_report('20200313')
     # print(per)
     # per.to_csv(r'e:\temp\per.csv')
     # sr.to_csv(r'e:\temp\sr.csv')
-    # save_monthly_stat('20190701','20200131')
+    # save_monthly_stat('20190701','20200331')
+    daily_report('20200330')
