@@ -3,7 +3,7 @@ import datetime
 
 from ps.data_loader import get_pos, get_trade, get_benchmark_info, get_alloction, \
     get_account_detail, get_daily_quote, get_commission_rate, calculate_dvd, cal_option_volume, \
-    get_sc_members, cal_cta_commission
+    get_sc_members, cal_cta_commission, get_dividend_amount_quantity
 from ps.utils import save_result
 from jt.utils.misc.log import Logger
 from jt.utils.calendar.api_calendar import TradeCalendarDB
@@ -86,8 +86,9 @@ def cal_pos_return(pos):
     pos['stock_pre_amount'] = pos['pre_close'] * pos['volume'] * pos['multiplier']    
     _allocation = ALLOCATION.loc[ALLOCATION.sec_type==_sec_type_margin, ['strategy_id','commission','min_commission']]
     pos = pos.merge(_allocation, on='strategy_id', how='left').fillna(0)
-    pos['marginfee'] = pos.apply(lambda x: abs(x['stock_amount']) * (x['commission']-0.025) / 250 if x['commission']>0 else 0, 
-                                axis=1) # Simple handling of currency interest rate of 2%
+    pos['marginfee'] = pos.apply(lambda x: abs(x['stock_amount']) * (x['commission']-0.017) / 250 
+                                if (x['commission']>0) and ('RQ' in x['strategy_id']) else 0, 
+                                axis=1) # Simple handling of currency interest rate of 1.7%
     pos['stock_pos_pnl'] = pos['change_price'] * pos['volume'] * pos['multiplier'] - pos['marginfee']
     pos_stats = pos[['strategy_id', 'stock_pos_pnl', 'stock_amount', 'stock_pre_amount', 'marginfee']].groupby(
         by='strategy_id').sum().reset_index()
@@ -334,6 +335,11 @@ def daily_statistics(date_=calendar.get_trading_date(), acc_lists=None, new_acco
         pos = get_pos(tmp_date, acc_lists)
     else:
         pos = get_pos(date_, acc_lists)
+        
+    if not pos.empty:
+        # deal with diviend
+        pos_dvd, pos =  get_dividend_amount_quantity(date_, acc_lists, pos)
+
     trade = get_trade(date_, acc_lists)
 
     #if there is no T-1 pos and T trade, return [empty dataframe]
@@ -355,15 +361,15 @@ def daily_statistics(date_=calendar.get_trading_date(), acc_lists=None, new_acco
         sc_member = get_sc_members(calendar.get_trading_date(date_, offset_=-1))
         # if calendar.is_trading_date(date_, exchange_='hk'):
         index_prices = index_prices.append(hkindex_prices, ignore_index=True)
+        tmp_fu_price = future_prices.loc[:,['symbol','pre_close','close']]
+        tmp_fu_price['change_price'] = tmp_fu_price['close'] - tmp_fu_price['pre_close']
+        tmp_fu_price['change_rate'] = (tmp_fu_price['close'] / tmp_fu_price['pre_close'] - 1) * 100
+        index_prices = index_prices.append(tmp_fu_price)
     else:
         if calendar.is_trading_date(date_, exchange_='hk'):
             index_prices = hkindex_prices
             forex_prices = get_daily_quote(calendar.get_trading_date(date_), 'forex')
     
-    tmp_fu_price = future_prices.loc[:,['symbol','pre_close','close']]
-    tmp_fu_price['change_price'] = tmp_fu_price['close'] - tmp_fu_price['pre_close']
-    tmp_fu_price['change_rate'] = (tmp_fu_price['close'] / tmp_fu_price['pre_close'] - 1) * 100
-    index_prices = index_prices.append(tmp_fu_price)
     BM = BM.merge(index_prices, left_on='bm_symbol', right_on='symbol', how='left') 
     account_detail = get_account_detail(calendar.get_trading_date(date_, -1), new_account)
 
@@ -491,17 +497,6 @@ def daily_statistics(date_=calendar.get_trading_date(), acc_lists=None, new_acco
         pos_stats = pos_stats.merge(_pos_stats, how='outer', on=['strategy_id'])
         trade_stats = trade_stats.merge(_trade_stats, how='outer', on=['strategy_id'])
     
-    # get dividend
-    acc_lists = "'"+"','".join(acc_lists)+"'"
-    sql = f'''
-        SELECT strategy_id, sum(dvd_amount) as dvd_amount FROM "public"."dividend_detail" where ex_dt='{date_}' and strategy_id in ({acc_lists}) group by strategy_id
-    '''
-    pos_dvd = attributiondb.read(sql)
-    if pos_dvd.empty:
-        pos_dvd = pd.DataFrame(columns=['strategy_id', 'dvd_amount'])        
-    else:
-        log.info(f'dividend {date_}: \n {pos_dvd}')       
-
     pos_stats = pos_stats.merge(pos_dvd, on='strategy_id', how='outer').fillna(0)
     stats = merge_pos_trade_stats(date_, pos_stats, trade_stats, account_detail, BM)
 
@@ -549,15 +544,15 @@ def daily_statistics(date_=calendar.get_trading_date(), acc_lists=None, new_acco
         calculate_dvd(date_, pos_end) 
 
     strategy_ids_ = ['95_MJOPT','80B_MJOPT','93C_MJOPT', '80B_MJCTA', '93A_MJCTA', '95_MJCTA', 
-        '99A_MJCTA','100_MJCTA',
-        '80A_ARBT','12_ARBT','82_ARBT','99A_ARBT','100_ARBT','80E_ARBT',
-        '80A_ZS','12_ZS','82_ZS',
-        '99B_FANCTA100','80D_FANCTA100','100_FANCTA100']
-    bm_pnls_ = [196*0.03/245*10000, 300*0.03/245*10000, 200*0.03/245*10000, 1000*0.03/245*10000, 200*0.03/245*10000, 200*0.03/245*10000,
-        200*0.03/245*10000, 133*0.03/245*10000, 
-        2000*0.03/245*10000, 30*0.03/245*10000, 30*0.03/245*10000, 200*0.03/245*10000, 134*0.03/245*10000, 500*0.03/245*10000,
-        500*0.03/245*10000, 60*0.03/245*10000, 30*0.03/245*10000,
-        200*0.03/245*10000, 900*0.03/245*10000, 133*0.03/245*10000]
+        '99A_MJCTA','100_MJCTA', '104_MJCTA',        
+        '80A_ZS','12_ZS','82_ZS', '101_ZS', '102B_ZS', '80F_ZS',
+        '99B_FANCTA100','80D_FANCTA100','100_FANCTA100', '104_FANCTA100',
+        '101C_ZSXK', '102C_ZSXK']
+    bm_pnls_ = [196*0.015/245*10000, 300*0.015/245*10000, 200*0.015/245*10000, 1000*0.015/245*10000, 200*0.015/245*10000, 200*0.015/245*10000,
+        200*0.015/245*10000, 133*0.015/245*10000, 300*0.015/245*10000,     
+        500*0.015/245*10000, 30*0.015/245*10000, 30*0.015/245*10000, 60*0.015/245*10000, 45*0.015/245*10000, 60*0.015/245*10000,
+        200*0.015/245*10000, 900*0.015/245*10000, 133*0.03/245*10000, 300*0.015/245*10000,
+        45*0.015/245*10000 ,360*0.015/245*10000]
     cal_special_bm_pnl(date_,strategy_ids_,bm_pnls_)
 
     return stats
@@ -574,7 +569,7 @@ def cal_special_bm_pnl(date_, strategy_ids_, bm_pnls_):
 
 
 if __name__ == "__main__":    
-    # date_list = calendar.get_trading_calendar(from_='20191030', to_='20191106')
+    # date_list = calendar.get_trading_calendar(from_='20200313', to_='20200317')
     # for d in date_list:
     #     print(f'Deal date {d}')
     #     acc_lists = ['01_HEDGE','06_HEDGE','07_HEDGE','13_HEDGE','52_HEDGE','55_HEDGE','55_JDHEDGE',
@@ -583,8 +578,8 @@ if __name__ == "__main__":
     #             '12_OTHER','13_OTHER','41_OTHER','52_OTHER','55_OTHER','58_OTHER','62_OTHER','64A_OTHER',
     #             '79_OTHER','80A_OTHER','80_OTHER','82_OTHER','84_OTHER','85A_OTHER','85B_OTHER','89_OTHER',
     #             '91_OTHER','93A_OTHER','93B_OTHER','93_OTHER','06_DV','01_DV','01_PETER','01_ZF502']
-        # daily_statistics(d, ['80B_MJOPT']) #, new_account=pd.DataFrame({'account_id':['95'], 'totalasset':[2000000]})
-    daily_statistics('20200313',['93A_RQ'])
+        # daily_statistics(d, ['99A_ARBT','99A_MJCTA']) #, new_account=pd.DataFrame({'account_id':['95'], 'totalasset':[2000000]})
+    daily_statistics('20200528')
     # date_ = '20200103'
     # strategy_ids_ = ['100_FANCTA100']
     # bm_pnls_ = [133*0.03/245*10000]

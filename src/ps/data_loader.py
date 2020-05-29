@@ -197,10 +197,11 @@ def get_deduction(from_, to_):
 
 
 def get_performance(from_, to_):
+    #FIXME cal the 88 performance
     sql = f'''
         SELECT strategy_name,sum(pnl) as pnl,sum(bm_pnl) as bm_pnl,sum(stock_mv) as stock_mv
         FROM "performance" b 
-        where trade_dt between '{from_}' and '{to_}'
+        where trade_dt between '{from_}' and '{to_}' and strategy_id not in ('86_PR','88_PR')
         GROUP BY strategy_name
     '''
     ret = attributiondb.read(sql)
@@ -216,9 +217,12 @@ def get_history_alpha(from_, to_):
             and a.trade_dt between '{from_}' and '{to_}' and abs(a.trade_net)/a.stock_mv<=0.5
             GROUP BY a.trade_dt,strategy_name
             union
-            select trade_dt,strategy_name,round(avg(alpha),2) as alpha,0 as turnover
-            from "performance" where stock_mv=0 and trade_dt between '{from_}' and '{to_}'
-            GROUP BY trade_dt,strategy_name) as foo
+            select a.trade_dt,strategy_name,round(avg(alpha),2) as alpha,0 as turnover
+            from "performance" a, "classcification_detail" b 
+            where a.stock_mv=0 and a.trade_dt=b.trade_dt and a.strategy_id=b.strategy_id
+            and ((abs(b.cta_pos_pnl)+abs(b.cta_trade_pnl)!=0) or (abs(b.future_pos_pnl)+abs(b.future_trade_pnl)!=0) or (abs(b.option_pos_pnl)+abs(b.option_trade_pnl)!=0))
+            and a.trade_dt between '{from_}' and '{to_}'
+            GROUP BY a.trade_dt,strategy_name) as foo
         order by strategy_name,trade_dt
     '''
     ret = attributiondb.read(sql)
@@ -271,6 +275,29 @@ def get_argo_pnl(from_, to_):
     return ret
 
 
+def get_dividend_amount_quantity(date_, acc_lists, pos):
+    # get dvd amount
+    acc_lists_str = "'"+"','".join(acc_lists)+"'"
+    sql = f'''
+        SELECT strategy_id, sum(dvd_amount) as dvd_amount FROM "public"."dividend_detail" where ex_dt='{date_}' and strategy_id in ({acc_lists_str}) group by strategy_id
+    '''
+    pos_dvd = attributiondb.read(sql)
+    if pos_dvd.empty:
+        pos_dvd = pd.DataFrame(columns=['strategy_id', 'dvd_amount'])        
+
+    # get dvd quantity and deal the pos
+    sql = f'''
+        select strategy_id, symbol, dvd_volume from "public"."dividend_detail" where ex_dt='{date_}' and strategy_id in ({acc_lists_str})
+    '''
+    pos_dvd_amount = attributiondb.read(sql)
+    if pos_dvd_amount.empty:
+        pass      
+    else:
+        pos = pos.merge(pos_dvd_amount, on=['strategy_id','symbol'], how='left').fillna(0)
+        pos['volume'] = pos['volume'] + pos['dvd_volume']
+        pos.drop(columns='dvd_volume', inplace=True) 
+    
+    return pos_dvd, pos
+
 if __name__ == "__main__":
-    ret = get_defer_bonus('20200930')
-    print(ret)
+    pass
