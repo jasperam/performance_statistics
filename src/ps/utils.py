@@ -47,7 +47,7 @@ def get_security_type(symbol_):
         if symbol_.startswith('IC') or symbol_.startswith('IF') or symbol_.startswith('IH'):
             return _sec_type_future        
         # cta
-        elif (symbol_.endswith('.CZC') or symbol_.endswith('.SHF') or symbol_.endswith('.DCE')) \
+        elif (symbol_.endswith('.CZC') or symbol_.endswith('.SHF') or symbol_.endswith('.DCE') or symbol_.endswith('.INE')) \
             and ('-' not in symbol_) and (len(symbol_) < 11):
             return _sec_type_cta
         # index swap -> fund

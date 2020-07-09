@@ -87,7 +87,7 @@ def cal_pos_return(pos):
     _allocation = ALLOCATION.loc[ALLOCATION.sec_type==_sec_type_margin, ['strategy_id','commission','min_commission']]
     pos = pos.merge(_allocation, on='strategy_id', how='left').fillna(0)
     pos['marginfee'] = pos.apply(lambda x: abs(x['stock_amount']) * (x['commission']-0.017) / 250 
-                                if (x['commission']>0) and ('RQ' in x['strategy_id']) else 0, 
+                                if (x['commission']>0) and ('_RQ' in x['strategy_id']) else 0, 
                                 axis=1) # Simple handling of currency interest rate of 1.7%
     pos['stock_pos_pnl'] = pos['change_price'] * pos['volume'] * pos['multiplier'] - pos['marginfee']
     pos_stats = pos[['strategy_id', 'stock_pos_pnl', 'stock_amount', 'stock_pre_amount', 'marginfee']].groupby(
@@ -543,17 +543,17 @@ def daily_statistics(date_=calendar.get_trading_date(), acc_lists=None, new_acco
     if not pos_end.empty:  
         calculate_dvd(date_, pos_end) 
 
-    strategy_ids_ = ['95_MJOPT','80B_MJOPT','93C_MJOPT', '80B_MJCTA', '93A_MJCTA', '95_MJCTA', 
-        '99A_MJCTA','100_MJCTA', '104_MJCTA',        
+    strategy_ids_ = ['95_MJOPT','93C_MJOPT', '93E_MJOPT', '93A_MJCTA', '95_MJCTA', 
+        '99A_MJCTA','100A_MJCTA', '104A_MJCTA',        
         '80A_ZS','12_ZS','82_ZS', '101_ZS', '102B_ZS', '80F_ZS',
-        '99B_FANCTA100','80D_FANCTA100','100_FANCTA100', '104_FANCTA100',
+        '99B_FANCTA100','100A_FANCTA100', '104A_FANCTA100',
         '101C_ZSXK', '102C_ZSXK']
-    bm_pnls_ = [196*0.015/245*10000, 300*0.015/245*10000, 200*0.015/245*10000, 1000*0.015/245*10000, 200*0.015/245*10000, 200*0.015/245*10000,
-        200*0.015/245*10000, 133*0.015/245*10000, 300*0.015/245*10000,     
+    bm_pnls_ = [100*0.015/245*10000, 200*0.015/245*10000, 226*0.015/245*10000, 200*0.015/245*10000, 200*0.015/245*10000,
+        200*0.015/245*10000, 200*0.015/245*10000, 300*0.015/245*10000,     
         500*0.015/245*10000, 30*0.015/245*10000, 30*0.015/245*10000, 60*0.015/245*10000, 45*0.015/245*10000, 60*0.015/245*10000,
-        200*0.015/245*10000, 900*0.015/245*10000, 133*0.03/245*10000, 300*0.015/245*10000,
+        200*0.015/245*10000, 200*0.03/245*10000, 300*0.015/245*10000,
         45*0.015/245*10000 ,360*0.015/245*10000]
-    cal_special_bm_pnl(date_,strategy_ids_,bm_pnls_)
+    cal_special_bm_pnl(date_, strategy_ids_, bm_pnls_)
 
     return stats
 
@@ -579,7 +579,7 @@ if __name__ == "__main__":
     #             '79_OTHER','80A_OTHER','80_OTHER','82_OTHER','84_OTHER','85A_OTHER','85B_OTHER','89_OTHER',
     #             '91_OTHER','93A_OTHER','93B_OTHER','93_OTHER','06_DV','01_DV','01_PETER','01_ZF502']
         # daily_statistics(d, ['99A_ARBT','99A_MJCTA']) #, new_account=pd.DataFrame({'account_id':['95'], 'totalasset':[2000000]})
-    daily_statistics('20200528')
+    daily_statistics('20200630',['104A_FANCTA100'])
     # date_ = '20200103'
     # strategy_ids_ = ['100_FANCTA100']
     # bm_pnls_ = [133*0.03/245*10000]

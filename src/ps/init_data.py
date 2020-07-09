@@ -65,7 +65,7 @@ def download_ashare_daily_data(w, date_ = TODAY, is_overwrite_ = False):
     # index daily quote
     _quote_file_index = os.path.join(_root, f'index_{date_}.csv')
     if (not fsutils.is_file(_quote_file_index)) or (fsutils.is_file(_quote_file_index) and is_overwrite_):
-        BENCHMARK = ['H00016.SH','H00300.CSI','H00905.CSI','H00852.SH']      
+        BENCHMARK = ['H00016.SH','H00300.CSI','H00905.CSI','H00852.SH','N00300.CSI','N00905.CSI']      
         sql = f'''
             SELECT S_INFO_WINDCODE as symbol,S_DQ_PRECLOSE as pre_close,S_DQ_CLOSE as [close],
                     S_DQ_CHANGE as change_price,S_DQ_PCTCHANGE as change_rate
