@@ -277,24 +277,6 @@ def merge_pos_trade_stats(date_, pos_stats, trade_stats, account_detail, BM):
     return stats
 
 
-def cal_type_1(stats):
-    """
-    cal type 1:
-    normal model alpha
-    """    
-    # summary in stats, insert into DB  
-    stats['ret'] = stats.apply(lambda x: \
-        x['pnl']/x['stock_pre_amount']*10000 if abs(x['stock_pre_amount'])>0 else 0, axis=1)
-    stats['alpha'] = stats.apply(lambda x: x['ret'] - x['bm'] if x['stock_pre_amount']>=0 else x['bm'] - x['ret'], axis=1)
-    stats['pos_ret'] = stats.apply(lambda x: \
-        x['pos_pnl']/x['stock_pre_amount']*10000 if abs(x['stock_pre_amount'])>0 else 0, axis=1)
-    stats['trade_ret'] = stats.apply(lambda x: \
-        x['trade_pnl']/x['stock_pre_amount']*10000 if abs(x['stock_pre_amount'])>0 else 0, axis=1)     
-    stats['bm_pnl'] = stats['stock_pre_amount'] * stats['bm'] / 10000
-    
-    return stats
-
-
 def cal_type_3(stats):
     """
     cal type 3:
@@ -324,17 +306,41 @@ def cal_type_2(stats):
 
     return stats
 
-def daily_statistics(date_=calendar.get_trading_date(), acc_lists=None, new_account=None):   
+
+def cal_type_1(stats):
+    """
+    cal type 1:
+    normal model alpha
+    """    
+    # summary in stats, insert into DB  
+    stats['ret'] = stats.apply(lambda x: \
+        x['pnl']/(x['stock_pre_amount']+x['hk_stock_pre_amount'])*10000 
+        if abs(x['stock_pre_amount']+x['hk_stock_pre_amount'])>0 else 0, axis=1)
+    stats['alpha'] = stats.apply(lambda x: x['ret'] - x['bm'] 
+        if (x['stock_pre_amount']+x['hk_stock_pre_amount'])>=0 else x['bm'] - x['ret'], axis=1)
+    stats['pos_ret'] = stats.apply(lambda x: \
+        x['pos_pnl']/(x['stock_pre_amount']+x['hk_stock_pre_amount'])*10000 
+        if abs(x['stock_pre_amount']+x['hk_stock_pre_amount'])>0 else 0, axis=1)
+    stats['trade_ret'] = stats.apply(lambda x: \
+        x['trade_pnl']/(x['stock_pre_amount']+x['hk_stock_pre_amount'])*10000 
+        if abs(x['stock_pre_amount']+x['hk_stock_pre_amount'])>0 else 0, axis=1)     
+    stats['bm_pnl'] = (stats['stock_pre_amount']+stats['hk_stock_pre_amount']) * stats['bm'] / 10000
+    
+    return stats
+
+def daily_statistics(date_=calendar.get_trading_date(), acc_lists=None, new_account=None,
+    to_db = True):   
     # data pre-process    
     if acc_lists is None:
         acc_lists = ALLOCATION['strategy_id'].drop_duplicates().tolist()
     BM = get_benchmark_info()
     stats = pd.DataFrame()
-    if not calendar.is_trading_date(date_):
-        tmp_date = calendar.get_trading_date(date_)
-        pos = get_pos(tmp_date, acc_lists)
-    else:
-        pos = get_pos(date_, acc_lists)
+    # if not calendar.is_trading_date(date_):
+    #     tmp_date = calendar.get_trading_date(date_, -1)
+    #     pos = get_pos(tmp_date, acc_lists)
+    # else:
+    y_date = calendar.get_trading_date(date_, -1)        
+    pos = get_pos(y_date, acc_lists)
         
     if not pos.empty:
         # deal with diviend
@@ -523,7 +529,7 @@ def daily_statistics(date_=calendar.get_trading_date(), acc_lists=None, new_acco
             'fee','commission','buy','sell','trade_net','stock_mv_ratio',
             'product_asset','stock_turnover','update_time','bm_pnl','dvd_amount','strategy_name','marginfee']]
 
-            if not performance_stats.empty:
+            if to_db and (not performance_stats.empty):
                 save_result(performance_stats, attributiondb, '"public"."performance"', ['trade_dt', 'strategy_id'])
 
             detail_stats = tmp_stats[['trade_dt','strategy_id','stock_pos_pnl','stock_trade_pnl',
@@ -535,23 +541,21 @@ def daily_statistics(date_=calendar.get_trading_date(), acc_lists=None, new_acco
             'hk_stock_fee','hk_stock_commission','hk_stock_amount','hk_stock_pos_counts','hk_stock_forex',
             'cta_pos_pnl','cta_trade_pnl','cta_buy','cta_sell','cta_commission','cta_amount','marginfee']]
 
-            if not detail_stats.empty:
+            if to_db and (not detail_stats.empty):
                 save_result(detail_stats, attributiondb, '"public"."classcification_detail"', ['trade_dt', 'strategy_id'])
 
     # calculation dividend of T
-    pos_end = get_pos(calendar.get_trading_date(date_, 1), acc_lists)  
+    pos_end = get_pos(date_, acc_lists)  
     if not pos_end.empty:  
-        calculate_dvd(date_, pos_end) 
+        r = calculate_dvd(date_, pos_end) 
+        if not r.empty:
+            attributiondb.upsert('dividend_detail', df_=r, keys_=['ex_dt','strategy_id','symbol'])
 
-    strategy_ids_ = ['95_MJOPT','93C_MJOPT', '93E_MJOPT', '93A_MJCTA', '95_MJCTA', 
-        '99A_MJCTA','100A_MJCTA', '104A_MJCTA',        
-        '80A_ZS','12_ZS','82_ZS', '101_ZS', '102B_ZS', '80F_ZS',
-        '99B_FANCTA100','100A_FANCTA100', '104A_FANCTA100',
+    strategy_ids_ = ['12_ZS','82_ZS', '101_ZS', '102B_ZS', '80F_ZS', '102C_ZS',
+        '99A_FANCTA100','99B_FANCTA100','100A_FANCTA100', '104A_FANCTA100',
         '101C_ZSXK', '102C_ZSXK']
-    bm_pnls_ = [100*0.015/245*10000, 200*0.015/245*10000, 226*0.015/245*10000, 200*0.015/245*10000, 200*0.015/245*10000,
-        200*0.015/245*10000, 200*0.015/245*10000, 300*0.015/245*10000,     
-        500*0.015/245*10000, 30*0.015/245*10000, 30*0.015/245*10000, 60*0.015/245*10000, 45*0.015/245*10000, 60*0.015/245*10000,
-        200*0.015/245*10000, 200*0.03/245*10000, 300*0.015/245*10000,
+    bm_pnls_ = [30*0.015/245*10000, 30*0.015/245*10000, 60*0.015/245*10000, 45*0.015/245*10000, 60*0.015/245*10000, 300*0.015/245*10000, 
+        239*0.015/245*10000, 352*0.015/245*10000, 540*0.03/245*10000, 1100*0.015/245*10000,
         45*0.015/245*10000 ,360*0.015/245*10000]
     cal_special_bm_pnl(date_, strategy_ids_, bm_pnls_)
 
@@ -579,7 +583,7 @@ if __name__ == "__main__":
     #             '79_OTHER','80A_OTHER','80_OTHER','82_OTHER','84_OTHER','85A_OTHER','85B_OTHER','89_OTHER',
     #             '91_OTHER','93A_OTHER','93B_OTHER','93_OTHER','06_DV','01_DV','01_PETER','01_ZF502']
         # daily_statistics(d, ['99A_ARBT','99A_MJCTA']) #, new_account=pd.DataFrame({'account_id':['95'], 'totalasset':[2000000]})
-    daily_statistics('20200630',['104A_FANCTA100'])
+    daily_statistics('20200901',['01_ZFM502','99A_FANCTA100','99B_FANCTA100','100A_FANCTA100', '104A_FANCTA100','102C_ZS'])
     # date_ = '20200103'
     # strategy_ids_ = ['100_FANCTA100']
     # bm_pnls_ = [133*0.03/245*10000]

@@ -23,12 +23,13 @@ attributiondb = PgSQLLoader('attribution')
 winddb = SqlServerLoader('ali')
 traderdb = SqlServerLoader('trade')
 CONFIG = read_yaml('cfg/file.yaml', package='ps')
+navdb = SqlServerLoader('trade71')
 
 EXCLUDED_SECURITY_LIST = ['204001.SZ'] # the securities that don't deal with
 
 def get_pos(date_, strategy_ids=None):  
-    y_date = calendar.get_trading_date(date_, offset_=-1)
-    pos = dataloader.get_position_gql(y_date, y_date, strategy_ids)
+    # y_date = calendar.get_trading_date(date_, offset_=nlag)
+    pos = dataloader.get_position_gql(date_, date_, strategy_ids)
     if not pos.empty:
         pos = pos[pos.volume!=0]        
         pos = pos[~pos['symbol'].isin(EXCLUDED_SECURITY_LIST)].reset_index(drop=True)
@@ -160,7 +161,6 @@ def calculate_dvd(date_, pos):
         r['dvd_amount'] = r['volume'] * r['dvd_amount_per_share']
 
         r.drop(columns=['dvd_volume_per_share','dvd_amount_per_share'], inplace=True)    
-        attributiondb.upsert('dividend_detail', df_=r, keys_=['ex_dt','strategy_id','symbol'])
 
     return r
 
@@ -201,7 +201,7 @@ def get_performance(from_, to_):
     sql = f'''
         SELECT strategy_name,sum(pnl) as pnl,sum(bm_pnl) as bm_pnl,sum(stock_mv) as stock_mv
         FROM "performance" b 
-        where trade_dt between '{from_}' and '{to_}' and strategy_id not in ('86_PR','88_PR')
+        where trade_dt between '{from_}' and '{to_}' and strategy_id not in ('86_PR')
         GROUP BY strategy_name
     '''
     ret = attributiondb.read(sql)
@@ -230,6 +230,7 @@ def get_history_alpha(from_, to_):
 
 
 def get_daily_alpha(date_):
+    # TODO: market value weighted depended on yesterday mv, not today
     sql = f'''
         select trade_dt,strategy_name,alpha,turnover from (
             select a.trade_dt,strategy_name,round(sum(alpha*abs(stock_mv))/sum(abs(stock_mv)) ,2) as alpha, round(sum(a.stock_turnover/2*stock_mv)/sum(stock_mv) ,2) as turnover
@@ -299,5 +300,51 @@ def get_dividend_amount_quantity(date_, acc_lists, pos):
     
     return pos_dvd, pos
 
+
+def decrease_hk_fee(from_, to_):
+    """
+    Decrease the cost of some products
+    input: from_ date, to_ date
+    strategy_ids
+    get long position fee from nav db, decrease depend on the mv of strateties
+    """
+    # get long pos fee
+    sql = f"""
+        SELECT account_id, sum(-1*long_fee) as total_fee 
+        FROM [dbo].[JasperHKPnl] where [date] between '{from_}' and '{to_}' 
+        GROUP BY account_id
+    """
+    fee = navdb.read(sql)
+
+    alloc = get_alloction()
+    alloc = alloc.loc[:, ['strategy_id','root_product_id','strategy_name']].drop_duplicates()
+
+    hk_sta_list = alloc.loc[(alloc['root_product_id'].isin(fee['account_id'])) \
+        & (~alloc['strategy_id'].str.contains('HEDGE')) & (~alloc['strategy_id'].str.contains('OTHER')), 'strategy_id'].to_list()
+    hk_sta_str = "','".join(hk_sta_list)
+
+    # get strategy ratio
+    sql = f"""
+        SELECT strategy_id, sum(stock_mv) as mv FROM "performance" 
+        where trade_dt between '{from_}' and '{to_}' and strategy_id in ('{hk_sta_str}') GROUP BY strategy_id
+    """
+    stra_mv = attributiondb.read(sql)
+    stra_mv = stra_mv.merge(alloc, on='strategy_id', how='left')
+    stra_mv['pnl'] = 0
+    for p_id in fee['account_id']:
+        stra_mv.loc[stra_mv['root_product_id']==p_id, 'pnl'] = stra_mv.loc[stra_mv['root_product_id']==p_id, 'mv']. \
+            div(stra_mv.loc[stra_mv['root_product_id']==p_id, 'mv'].sum()). \
+            mul(fee.loc[fee['account_id']==p_id, 'total_fee'].to_numpy()[0])
+    
+
+    stra_mv['trade_dt'] = to_
+    attributiondb.upsert('"public"."one_time_deduction"', stra_mv[['trade_dt','strategy_id','pnl','strategy_name']], 
+        keys_=['trade_dt','strategy_id','strategy_name'])
+    pass    
+
+
 if __name__ == "__main__":
+    # p = get_pos('20200729','101A_SEO')
+    # print(p)
+    # decrease_hk_fee('20200701','20200731')
     pass

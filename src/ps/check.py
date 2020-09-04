@@ -29,10 +29,10 @@ def check_allocation(date_ = today):
         _log.info("Strategy don't exist in attribution:")
         _log.info(ret.loc[ret['_merge']=='left_only', 'strategy_id'])
 
-    if 'right_only' in set(ret['_merge']):
-        _log.info("Strategy only exist in attribution:")
-        _log.info(ret.loc[(ret['_merge']=='right_only') & (~ret['strategy_id'].str.contains('OTHER')) & (~ret['strategy_id'].str.contains('HEDGE')),
-        'strategy_id'])
+    # if 'right_only' in set(ret['_merge']):
+    #     _log.info("Strategy only exist in attribution:")
+    #     _log.info(ret.loc[(ret['_merge']=='right_only') & (~ret['strategy_id'].str.contains('OTHER')) & (~ret['strategy_id'].str.contains('HEDGE')),
+    #     'strategy_id'])
 
 if __name__ == "__main__":
     check_allocation('20200214')

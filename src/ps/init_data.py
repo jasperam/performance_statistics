@@ -33,12 +33,13 @@ def set_data(outdata):
             d[str(outdata.Fields[k]).lower()].append(outdata.Data[k][i])
     return d
 
-def init_db_info():    
+def init_db_info(dbloader, file_path):    
     """
     upsert configs of PS to DB
     """
-    dbloader = PgSQLLoader('attribution')   
-    file_list = fsutils.get_all_files(CONFIG.get('DB_CFG', NameError))
+    # dbloader = PgSQLLoader('attribution')   
+    # file_list = fsutils.get_all_files(CONFIG.get('DB_CFG', NameError))
+    file_list = fsutils.get_all_files(file_path)
     for cfg in file_list:
         table_name = os.path.basename(cfg)
         table_name = table_name[0: len(table_name)-4]
@@ -267,7 +268,7 @@ def copy_extract_kline_files(date_=TODAY, is_overwrite_=False):
 
 
 if __name__ == "__main__":
-    # init_db_info()  
+    # init_db_info(PgSQLLoader('attribution'), CONFIG.get('DB_CFG', NameError))  
     download_daily_data()  
     # date_list = calendar.get_trading_calendar(from_='20190913', to_='20190911')
     # for d in date_list:
