@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_1lhkzl5" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="3.2.1">
+  <bpmn:process id="Process_0j7uive" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_1">
+      <bpmn:outgoing>SequenceFlow_08dwcdd</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:task id="Task_15oqsi5" name="根据指令生成成交清单">
+      <bpmn:incoming>SequenceFlow_08dwcdd</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_05cnp5v</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:sequenceFlow id="SequenceFlow_08dwcdd" sourceRef="StartEvent_1" targetRef="Task_15oqsi5" />
+    <bpmn:task id="Task_1giplqr" name="交易">
+      <bpmn:incoming>SequenceFlow_05cnp5v</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_0meg0fq</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:sequenceFlow id="SequenceFlow_05cnp5v" sourceRef="Task_15oqsi5" targetRef="Task_1giplqr" />
+    <bpmn:exclusiveGateway id="ExclusiveGateway_1t8p77i">
+      <bpmn:incoming>SequenceFlow_0meg0fq</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_0pgsqjr</bpmn:outgoing>
+      <bpmn:outgoing>SequenceFlow_0jmr7pk</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="SequenceFlow_0meg0fq" sourceRef="Task_1giplqr" targetRef="ExclusiveGateway_1t8p77i" />
+    <bpmn:task id="Task_1anul2x" name="直接按模型导入成交明细">
+      <bpmn:incoming>SequenceFlow_0pgsqjr</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_1i8t00t</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:sequenceFlow id="SequenceFlow_0pgsqjr" name="算法交易" sourceRef="ExclusiveGateway_1t8p77i" targetRef="Task_1anul2x" />
+    <bpmn:task id="Task_1mqbtxf" name="按各模型的指令分仓">
+      <bpmn:incoming>SequenceFlow_0jmr7pk</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_0cofgrj</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:sequenceFlow id="SequenceFlow_0jmr7pk" name="普通篮子交易" sourceRef="ExclusiveGateway_1t8p77i" targetRef="Task_1mqbtxf" />
+    <bpmn:sequenceFlow id="SequenceFlow_0cofgrj" sourceRef="Task_1mqbtxf" targetRef="ExclusiveGateway_1ma5hd2" />
+    <bpmn:sequenceFlow id="SequenceFlow_1i8t00t" sourceRef="Task_1anul2x" targetRef="ExclusiveGateway_1ma5hd2" />
+    <bpmn:parallelGateway id="ExclusiveGateway_1ma5hd2">
+      <bpmn:incoming>SequenceFlow_0cofgrj</bpmn:incoming>
+      <bpmn:incoming>SequenceFlow_1i8t00t</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_0t2q2ex</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:task id="Task_0okl9ch" name="统计各模型业绩">
+      <bpmn:incoming>SequenceFlow_0t2q2ex</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_1qxovgp</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:sequenceFlow id="SequenceFlow_0t2q2ex" sourceRef="ExclusiveGateway_1ma5hd2" targetRef="Task_0okl9ch" />
+    <bpmn:task id="Task_1dofsd8" name="和各产品净值做核算">
+      <bpmn:incoming>SequenceFlow_1qxovgp</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_0gpj5m5</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:sequenceFlow id="SequenceFlow_1qxovgp" sourceRef="Task_0okl9ch" targetRef="Task_1dofsd8" />
+    <bpmn:endEvent id="EndEvent_077f0j9">
+      <bpmn:incoming>SequenceFlow_0gpj5m5</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="SequenceFlow_0gpj5m5" sourceRef="Task_1dofsd8" targetRef="EndEvent_077f0j9" />
+    <bpmn:textAnnotation id="TextAnnotation_1ncn6gb">
+      <bpmn:text>1.对同一个产品的不同模型，需要分别生成轧差后的成交清单
+2.轧差的交易，生成虚拟成交明细</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:association id="Association_1buwcvm" sourceRef="Task_15oqsi5" targetRef="TextAnnotation_1ncn6gb" />
+    <bpmn:textAnnotation id="TextAnnotation_1bqfcaa">
+      <bpmn:text>1.通过券商接口或者解析log文件
+2.包括成交时间和指令执行时间区间</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:association id="Association_090ksxx" sourceRef="Task_1anul2x" targetRef="TextAnnotation_1bqfcaa" />
+    <bpmn:textAnnotation id="TextAnnotation_0dsidky">
+      <bpmn:text>根据PB导出的文件导入成交明细，分仓后没有时间时间</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:association id="Association_1dr8z7q" sourceRef="Task_1mqbtxf" targetRef="TextAnnotation_0dsidky" />
+    <bpmn:textAnnotation id="TextAnnotation_1524eqp">
+      <bpmn:text>实时监控，撤补</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:association id="Association_1i7q4sf" sourceRef="Task_1giplqr" targetRef="TextAnnotation_1524eqp" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_0j7uive">
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+        <dc:Bounds x="179" y="304" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_15oqsi5_di" bpmnElement="Task_15oqsi5">
+        <dc:Bounds x="270" y="282" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_08dwcdd_di" bpmnElement="SequenceFlow_08dwcdd">
+        <di:waypoint x="215" y="322" />
+        <di:waypoint x="270" y="322" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_1ncn6gb_di" bpmnElement="TextAnnotation_1ncn6gb">
+        <dc:Bounds x="228" y="415" width="184" height="68" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_1buwcvm_di" bpmnElement="Association_1buwcvm">
+        <di:waypoint x="320" y="362" />
+        <di:waypoint x="320" y="415" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Task_1giplqr_di" bpmnElement="Task_1giplqr">
+        <dc:Bounds x="430" y="282" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_05cnp5v_di" bpmnElement="SequenceFlow_05cnp5v">
+        <di:waypoint x="370" y="322" />
+        <di:waypoint x="430" y="322" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="ExclusiveGateway_1t8p77i_di" bpmnElement="ExclusiveGateway_1t8p77i" isMarkerVisible="true">
+        <dc:Bounds x="595" y="297" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_0meg0fq_di" bpmnElement="SequenceFlow_0meg0fq">
+        <di:waypoint x="530" y="322" />
+        <di:waypoint x="595" y="322" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Task_1anul2x_di" bpmnElement="Task_1anul2x">
+        <dc:Bounds x="710" y="191" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_0pgsqjr_di" bpmnElement="SequenceFlow_0pgsqjr">
+        <di:waypoint x="620" y="297" />
+        <di:waypoint x="620" y="231" />
+        <di:waypoint x="710" y="231" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="613" y="261" width="44" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_1bqfcaa_di" bpmnElement="TextAnnotation_1bqfcaa">
+        <dc:Bounds x="670" y="81" width="180" height="68" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_090ksxx_di" bpmnElement="Association_090ksxx">
+        <di:waypoint x="760" y="191" />
+        <di:waypoint x="760" y="149" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Task_1mqbtxf_di" bpmnElement="Task_1mqbtxf">
+        <dc:Bounds x="710" y="361" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_0jmr7pk_di" bpmnElement="SequenceFlow_0jmr7pk">
+        <di:waypoint x="620" y="347" />
+        <di:waypoint x="620" y="401" />
+        <di:waypoint x="710" y="401" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="602" y="371" width="66" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_0dsidky_di" bpmnElement="TextAnnotation_0dsidky">
+        <dc:Bounds x="670" y="490" width="190" height="40" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_1dr8z7q_di" bpmnElement="Association_1dr8z7q">
+        <di:waypoint x="762" y="441" />
+        <di:waypoint x="764" y="490" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_0cofgrj_di" bpmnElement="SequenceFlow_0cofgrj">
+        <di:waypoint x="810" y="401" />
+        <di:waypoint x="900" y="401" />
+        <di:waypoint x="900" y="347" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_1i8t00t_di" bpmnElement="SequenceFlow_1i8t00t">
+        <di:waypoint x="810" y="231" />
+        <di:waypoint x="900" y="231" />
+        <di:waypoint x="900" y="297" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="ParallelGateway_02hxzaf_di" bpmnElement="ExclusiveGateway_1ma5hd2">
+        <dc:Bounds x="875" y="297" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_0okl9ch_di" bpmnElement="Task_0okl9ch">
+        <dc:Bounds x="990" y="282" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_0t2q2ex_di" bpmnElement="SequenceFlow_0t2q2ex">
+        <di:waypoint x="925" y="322" />
+        <di:waypoint x="990" y="322" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Task_1dofsd8_di" bpmnElement="Task_1dofsd8">
+        <dc:Bounds x="1160" y="282" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_1qxovgp_di" bpmnElement="SequenceFlow_1qxovgp">
+        <di:waypoint x="1090" y="322" />
+        <di:waypoint x="1160" y="322" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="EndEvent_077f0j9_di" bpmnElement="EndEvent_077f0j9">
+        <dc:Bounds x="1332" y="304" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_0gpj5m5_di" bpmnElement="SequenceFlow_0gpj5m5">
+        <di:waypoint x="1260" y="322" />
+        <di:waypoint x="1332" y="322" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_1524eqp_di" bpmnElement="TextAnnotation_1524eqp">
+        <dc:Bounds x="430" y="200" width="100" height="30" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_1i7q4sf_di" bpmnElement="Association_1i7q4sf">
+        <di:waypoint x="480" y="282" />
+        <di:waypoint x="480" y="230" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

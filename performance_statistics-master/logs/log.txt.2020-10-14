@@ -1,0 +1,41 @@
+2020-10-14 09:28:29,571 - [connectionpool.py:230] - DEBUG - Starting new HTTP connection (1): dev-qi-account.inner.jasperam.com:80
+2020-10-14 09:28:29,600 - [connectionpool.py:442] - DEBUG - http://dev-qi-account.inner.jasperam.com:80 "POST /graphql HTTP/1.1" 200 97467
+2020-10-14 09:28:29,658 - [remotes.py:106] - DEBUG - # WARN: fsspec dropbox unavailable: DropboxFileSystem requires "dropboxdrivefs","requests" and "dropbox" to be installed
+2020-10-14 09:28:29,659 - [remotes.py:106] - DEBUG - # WARN: fsspec http unavailable: HTTPFileSystem requires "requests" and "aiohttp" to be installed
+2020-10-14 09:28:29,659 - [remotes.py:106] - DEBUG - # WARN: fsspec https unavailable: HTTPFileSystem requires "requests" and "aiohttp" to be installed
+2020-10-14 09:28:29,659 - [remotes.py:106] - DEBUG - # WARN: fsspec gcs unavailable: Please install gcsfs to access Google Storage
+2020-10-14 09:28:29,660 - [remotes.py:106] - DEBUG - # WARN: fsspec gs unavailable: Please install gcsfs to access Google Storage
+2020-10-14 09:28:29,660 - [remotes.py:106] - DEBUG - # WARN: fsspec gdrive unavailable: Please install gdrivefs for access to Google Drive
+2020-10-14 09:28:29,660 - [remotes.py:106] - DEBUG - # WARN: fsspec sftp unavailable: SFTPFileSystem requires "paramiko" to be installed
+2020-10-14 09:28:29,660 - [remotes.py:106] - DEBUG - # WARN: fsspec ssh unavailable: SFTPFileSystem requires "paramiko" to be installed
+2020-10-14 09:28:29,660 - [remotes.py:106] - DEBUG - # WARN: fsspec hdfs unavailable: pyarrow and local java libraries required for HDFS
+2020-10-14 09:28:29,660 - [remotes.py:106] - DEBUG - # WARN: fsspec webhdfs unavailable: webHDFS access requires "requests" to be installed
+2020-10-14 09:28:29,661 - [remotes.py:106] - DEBUG - # WARN: fsspec s3 unavailable: Install s3fs to access S3
+2020-10-14 09:28:29,661 - [remotes.py:106] - DEBUG - # WARN: fsspec adl unavailable: Install adlfs to access Azure Datalake Gen1
+2020-10-14 09:28:29,661 - [remotes.py:106] - DEBUG - # WARN: fsspec abfs unavailable: Install adlfs to access Azure Datalake Gen2 and Azure Blob Storage
+2020-10-14 09:28:29,661 - [remotes.py:106] - DEBUG - # WARN: fsspec az unavailable: Install adlfs to access Azure Datalake Gen2 and Azure Blob Storage
+2020-10-14 09:28:29,661 - [remotes.py:106] - DEBUG - # WARN: fsspec dask unavailable: Install dask distributed to access worker file system
+2020-10-14 09:28:29,662 - [remotes.py:106] - DEBUG - # WARN: fsspec github unavailable: Install the requests package to use the github FS
+2020-10-14 09:28:29,662 - [remotes.py:106] - DEBUG - # WARN: fsspec git unavailable: Install pygit2 to browse local git repos
+2020-10-14 09:28:29,662 - [remotes.py:106] - DEBUG - # WARN: fsspec smb unavailable: SMB requires "smbprotocol" or "smbprotocol[kerberos]" installed
+2020-10-14 09:28:29,662 - [remotes.py:122] - DEBUG - # fsspec: registered 26 remote readers and 26 remote writers
+2020-10-14 09:30:31,050 - [connectionpool.py:230] - DEBUG - Starting new HTTP connection (1): dev-qi-account.inner.jasperam.com:80
+2020-10-14 09:30:32,113 - [remotes.py:106] - DEBUG - # WARN: fsspec dropbox unavailable: DropboxFileSystem requires "dropboxdrivefs","requests" and "dropbox" to be installed
+2020-10-14 09:30:32,113 - [remotes.py:106] - DEBUG - # WARN: fsspec http unavailable: HTTPFileSystem requires "requests" and "aiohttp" to be installed
+2020-10-14 09:30:32,114 - [remotes.py:106] - DEBUG - # WARN: fsspec https unavailable: HTTPFileSystem requires "requests" and "aiohttp" to be installed
+2020-10-14 09:30:32,114 - [remotes.py:106] - DEBUG - # WARN: fsspec gcs unavailable: Please install gcsfs to access Google Storage
+2020-10-14 09:30:32,114 - [remotes.py:106] - DEBUG - # WARN: fsspec gs unavailable: Please install gcsfs to access Google Storage
+2020-10-14 09:30:32,114 - [remotes.py:106] - DEBUG - # WARN: fsspec gdrive unavailable: Please install gdrivefs for access to Google Drive
+2020-10-14 09:30:32,115 - [remotes.py:106] - DEBUG - # WARN: fsspec sftp unavailable: SFTPFileSystem requires "paramiko" to be installed
+2020-10-14 09:30:32,115 - [remotes.py:106] - DEBUG - # WARN: fsspec ssh unavailable: SFTPFileSystem requires "paramiko" to be installed
+2020-10-14 09:30:32,115 - [remotes.py:106] - DEBUG - # WARN: fsspec hdfs unavailable: pyarrow and local java libraries required for HDFS
+2020-10-14 09:30:32,115 - [remotes.py:106] - DEBUG - # WARN: fsspec webhdfs unavailable: webHDFS access requires "requests" to be installed
+2020-10-14 09:30:32,115 - [remotes.py:106] - DEBUG - # WARN: fsspec s3 unavailable: Install s3fs to access S3
+2020-10-14 09:30:32,115 - [remotes.py:106] - DEBUG - # WARN: fsspec adl unavailable: Install adlfs to access Azure Datalake Gen1
+2020-10-14 09:30:32,115 - [remotes.py:106] - DEBUG - # WARN: fsspec abfs unavailable: Install adlfs to access Azure Datalake Gen2 and Azure Blob Storage
+2020-10-14 09:30:32,116 - [remotes.py:106] - DEBUG - # WARN: fsspec az unavailable: Install adlfs to access Azure Datalake Gen2 and Azure Blob Storage
+2020-10-14 09:30:32,116 - [remotes.py:106] - DEBUG - # WARN: fsspec dask unavailable: Install dask distributed to access worker file system
+2020-10-14 09:30:32,116 - [remotes.py:106] - DEBUG - # WARN: fsspec github unavailable: Install the requests package to use the github FS
+2020-10-14 09:30:32,116 - [remotes.py:106] - DEBUG - # WARN: fsspec git unavailable: Install pygit2 to browse local git repos
+2020-10-14 09:30:32,116 - [remotes.py:106] - DEBUG - # WARN: fsspec smb unavailable: SMB requires "smbprotocol" or "smbprotocol[kerberos]" installed
+2020-10-14 09:30:32,116 - [remotes.py:122] - DEBUG - # fsspec: registered 26 remote readers and 26 remote writers

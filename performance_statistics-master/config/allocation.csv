@@ -1,0 +1,5 @@
+strategy_id,product_id,status,strategy_name
+97A_OTHER,97A,running,OTHER
+97A_ZF1000,97A,running,ZF1000_1300
+97A_DV,97A,running,DV
+97A_HEDGE,97A,running,HEDGE

@@ -1,0 +1,80 @@
+2020-12-16 09:06:44,899 - [log.py:44] - INFO - Strategy don't exist in attribution:
+2020-12-16 09:06:44,905 - [log.py:44] - INFO - 71    64A_NEEQ
+Name: strategy_id, dtype: object
+2020-12-16 09:08:27,614 - [log.py:44] - INFO - Deal Cal Type 1
+2020-12-16 09:08:27,666 - [log.py:44] - INFO - Save result to DB "public"."performance_1"
+2020-12-16 09:08:27,776 - [log.py:44] - INFO - Save result to DB "public"."classcification_detail"
+2020-12-16 09:08:27,855 - [log.py:44] - INFO - Deal Cal Type 3
+2020-12-16 09:08:27,865 - [log.py:44] - INFO - Save result to DB "public"."performance_1"
+2020-12-16 09:08:27,897 - [log.py:44] - INFO - Save result to DB "public"."classcification_detail"
+2020-12-16 09:08:27,934 - [log.py:44] - INFO - Deal Cal Type 2
+2020-12-16 09:08:27,952 - [log.py:44] - INFO - Save result to DB "public"."performance_1"
+2020-12-16 09:08:27,967 - [log.py:44] - INFO - Save result to DB "public"."classcification_detail"
+2020-12-16 09:08:31,525 - [log.py:44] - INFO - Calculation new alpha of 20201214
+2020-12-16 09:08:32,366 - [log.py:44] - INFO - Correct FANCTA100 of 20201214
+2020-12-16 09:08:32,408 - [log.py:44] - INFO - Correct ARBT of 20201214
+2020-12-16 09:08:32,441 - [log.py:44] - INFO - Write performance_strategy of 20201214
+2020-12-16 09:09:37,136 - [log.py:44] - INFO - Deal Cal Type 1
+2020-12-16 09:09:37,175 - [log.py:44] - INFO - Save result to DB "public"."performance_1"
+2020-12-16 09:09:37,259 - [log.py:44] - INFO - Save result to DB "public"."classcification_detail"
+2020-12-16 09:09:37,345 - [log.py:44] - INFO - Deal Cal Type 3
+2020-12-16 09:09:37,354 - [log.py:44] - INFO - Save result to DB "public"."performance_1"
+2020-12-16 09:09:37,377 - [log.py:44] - INFO - Save result to DB "public"."classcification_detail"
+2020-12-16 09:09:37,408 - [log.py:44] - INFO - Deal Cal Type 2
+2020-12-16 09:09:37,420 - [log.py:44] - INFO - Save result to DB "public"."performance_1"
+2020-12-16 09:09:37,432 - [log.py:44] - INFO - Save result to DB "public"."classcification_detail"
+2020-12-16 09:10:29,707 - [log.py:44] - INFO - Calculation new alpha of 20201211
+2020-12-16 09:10:30,538 - [log.py:44] - INFO - Correct FANCTA100 of 20201211
+2020-12-16 09:10:30,590 - [log.py:44] - INFO - Correct ARBT of 20201211
+2020-12-16 09:10:30,614 - [log.py:44] - INFO - Write performance_strategy of 20201211
+2020-12-16 09:10:58,973 - [log.py:44] - INFO - Deal Cal Type 1
+2020-12-16 09:10:59,006 - [log.py:44] - INFO - Save result to DB "public"."performance_1"
+2020-12-16 09:10:59,088 - [log.py:44] - INFO - Save result to DB "public"."classcification_detail"
+2020-12-16 09:10:59,170 - [log.py:44] - INFO - Deal Cal Type 3
+2020-12-16 09:10:59,185 - [log.py:44] - INFO - Save result to DB "public"."performance_1"
+2020-12-16 09:10:59,214 - [log.py:44] - INFO - Save result to DB "public"."classcification_detail"
+2020-12-16 09:10:59,240 - [log.py:44] - INFO - Deal Cal Type 2
+2020-12-16 09:10:59,255 - [log.py:44] - INFO - Save result to DB "public"."performance_1"
+2020-12-16 09:10:59,270 - [log.py:44] - INFO - Save result to DB "public"."classcification_detail"
+2020-12-16 09:11:02,305 - [log.py:44] - INFO - Calculation new alpha of 20201210
+2020-12-16 09:11:03,138 - [log.py:44] - INFO - Correct FANCTA100 of 20201210
+2020-12-16 09:11:03,189 - [log.py:44] - INFO - Correct ARBT of 20201210
+2020-12-16 09:11:03,213 - [log.py:44] - INFO - Write performance_strategy of 20201210
+2020-12-16 09:21:02,006 - [log.py:44] - INFO - Strategy don't exist in attribution:
+2020-12-16 09:21:02,008 - [log.py:44] - INFO - 71    64A_NEEQ
+Name: strategy_id, dtype: object
+2020-12-16 09:21:09,924 - [log.py:44] - INFO - Deal Cal Type 1
+2020-12-16 09:21:09,955 - [log.py:44] - INFO - Save result to DB "public"."performance_1"
+2020-12-16 09:21:10,038 - [log.py:44] - INFO - Save result to DB "public"."classcification_detail"
+2020-12-16 09:21:10,111 - [log.py:44] - INFO - Deal Cal Type 3
+2020-12-16 09:21:10,121 - [log.py:44] - INFO - Save result to DB "public"."performance_1"
+2020-12-16 09:21:10,144 - [log.py:44] - INFO - Save result to DB "public"."classcification_detail"
+2020-12-16 09:21:10,190 - [log.py:44] - INFO - Deal Cal Type 2
+2020-12-16 09:21:10,214 - [log.py:44] - INFO - Save result to DB "public"."performance_1"
+2020-12-16 09:21:10,235 - [log.py:44] - INFO - Save result to DB "public"."classcification_detail"
+2020-12-16 09:21:13,887 - [log.py:44] - INFO - Calculation new alpha of 20201215
+2020-12-16 09:21:14,677 - [log.py:44] - INFO - Correct FANCTA100 of 20201215
+2020-12-16 09:21:14,717 - [log.py:44] - INFO - Correct ARBT of 20201215
+2020-12-16 09:21:14,759 - [log.py:44] - INFO - Write performance_strategy of 20201215
+2020-12-16 09:21:27,168 - [log.py:44] - INFO - start to run [daily_report]
+2020-12-16 09:36:57,646 - [log.py:44] - INFO - Strategy don't exist in attribution:
+2020-12-16 09:36:57,648 - [log.py:44] - INFO - 71    64A_NEEQ
+Name: strategy_id, dtype: object
+2020-12-16 09:37:04,932 - [log.py:44] - INFO - Deal Cal Type 1
+2020-12-16 09:37:04,964 - [log.py:44] - INFO - Save result to DB "public"."performance_1"
+2020-12-16 09:37:05,041 - [log.py:44] - INFO - Save result to DB "public"."classcification_detail"
+2020-12-16 09:37:05,106 - [log.py:44] - INFO - Deal Cal Type 3
+2020-12-16 09:37:05,116 - [log.py:44] - INFO - Save result to DB "public"."performance_1"
+2020-12-16 09:37:05,139 - [log.py:44] - INFO - Save result to DB "public"."classcification_detail"
+2020-12-16 09:37:05,166 - [log.py:44] - INFO - Deal Cal Type 2
+2020-12-16 09:37:05,178 - [log.py:44] - INFO - Save result to DB "public"."performance_1"
+2020-12-16 09:37:05,191 - [log.py:44] - INFO - Save result to DB "public"."classcification_detail"
+2020-12-16 09:37:10,232 - [log.py:44] - INFO - Calculation new alpha of 20201215
+2020-12-16 09:37:10,980 - [log.py:44] - INFO - Correct FANCTA100 of 20201215
+2020-12-16 09:37:11,015 - [log.py:44] - INFO - Correct ARBT of 20201215
+2020-12-16 09:37:11,048 - [log.py:44] - INFO - Write performance_strategy of 20201215
+2020-12-16 09:58:07,527 - [log.py:44] - INFO - Deal Cal Type 1
+2020-12-16 09:58:07,541 - [log.py:44] - INFO - Save result to DB [dbo].[performance_detail]
+2020-12-16 09:58:07,571 - [log.py:44] - INFO - Save result to DB [dbo].[performance]
+2020-12-16 09:58:08,896 - [log.py:44] - INFO - start to run [daily_report]
+2020-12-16 09:58:21,581 - [log.py:44] - INFO - start to run [daily_report]
